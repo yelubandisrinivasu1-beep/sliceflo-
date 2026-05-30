@@ -579,4 +579,75 @@ footnote:hover {
   }
 }
 
+/* ===== Responsive Layout Overrides & Media Queries ===== */
+
+/* Optimize layout sizes and borders for small mobile devices */
+@media (max-width: 640px) {
+  /* Reduce general page paddings */
+  main, .min-h-screen {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+    padding-top: 1rem !important;
+    padding-bottom: 2rem !important;
+  }
+
+  /* Make cards look slightly more compact and rounded */
+  .rounded-xl {
+    border-radius: 0.75rem !important;
+  }
+
+  .p-5 {
+    padding: 1rem !important;
+  }
+
+  /* Stack columns and inputs on extra small viewports */
+  .grid-cols-3 {
+    grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+  }
+
+  .flex-row {
+    flex-direction: column !important;
+  }
+
+  /* Ensure button triggers shrink cleanly */
+  .min-w-\[240px\] {
+    min-width: 100% !important;
+  }
+
+  .min-w-\[220px\] {
+    min-width: 100% !important;
+  }
+
+  /* Align editor toolbar items compactly */
+  .flex-wrap {
+    gap: 0.25rem !important;
+  }
+
+  /* Adjust typography for readability on mobile screen sizes */
+  h3 {
+    font-size: 0.875rem !important;
+  }
+
+  p {
+    font-size: 0.75rem !important;
+  }
+
+  textarea {
+    min-height: 180px !important;
+    padding: 0.75rem !important;
+  }
+}
+
+/* Adjust layout rules on medium tablet devices */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  
+  .p-5 {
+    padding: 1.25rem !important;
+  }
+}
+
+
 

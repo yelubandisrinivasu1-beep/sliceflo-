@@ -10,6 +10,7 @@ import "@blocknote/shadcn/style.css";
 import { useCreateBlockNote } from "@blocknote/react";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { Plus, UserPlus, X, Smile, Image as ImageIcon, ChevronRight, Download, Globe, Hash, FileText, Users } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { useDocStore } from "@/stores/useDoc-store";
@@ -47,6 +48,7 @@ import { HocuspocusProvider } from "@hocuspocus/provider";
 import { Spinner } from "@/components/ui/spinner";
 import { PDFExporter, pdfDefaultSchemaMappings } from "@blocknote/xl-pdf-exporter";
 import * as ReactPDF from "@react-pdf/renderer";
+import { updateDocument as updateDocumentApi } from "@/lib/api/documents-api";
 
 // Predefined cover images
 const COVER_IMAGES = {
@@ -74,6 +76,7 @@ interface DocsDetailsPageProps {
 
 export default function DocsDetailsPage({ params }: { params: { id: string } }) {
   const router = useRouter();
+  const { resolvedTheme } = useTheme();
   const activeDocId = useDocStore((state) => state.activeDocId);
   const getDocument = useDocStore((state) => state.getDocument);
   const updateDocument = useDocStore((state) => state.updateDocument);
@@ -99,6 +102,11 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
   const removePageLinkPortfolio = useDocStore((state) => state.removePageLinkPortfolio);
   const addPageLinkDocument = useDocStore((state) => state.addPageLinkDocument);
   const removePageLinkDocument = useDocStore((state) => state.removePageLinkDocument);
+  const removeProjectFromDocument = useDocStore((state) => state.removeProjectFromDocument);
+  const removeTeamFromDocument = useDocStore((state) => state.removeTeamFromDocument);
+  const removePortfolioFromDocument = useDocStore((state) => state.removePortfolioFromDocument);
+  const removeDocumentFromDocument = useDocStore((state) => state.removeDocumentFromDocument);
+  const addDocumentToDocument = useDocStore((state) => state.addDocumentToDocument);
 
   const { user } = useProfileStore();
   const { workspaceMembers, fetchWorkspaceMembers, currentWorkspace } = useWorkspaceStore();
@@ -112,7 +120,10 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [docMembers, setDocMembers] = useState([]);
+  const [docMembers, setDocMembers] = useState<string[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showAddEmojiPopover, setShowAddEmojiPopover] = useState(false);
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
   const [currentIcon, setCurrentIcon] = useState<string | undefined>(undefined);
   const [currentCover, setCurrentCover] = useState<string | null | undefined>(undefined);
   const titleInputRef = useRef<HTMLInputElement>(null);
@@ -263,7 +274,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
     {
       initialContent: fallbackContent as any,
       collaboration: syncStatus === 'synced' && provider && yDoc ? {
-        provider,
+        provider: provider as any,
         fragment: yDoc.getXmlFragment("document-store"),
         user: {
           name: user?.name || "User",
@@ -461,7 +472,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
     if (docId && isValidDocId) {
       updateDocument(docId, { title: newTitle });
       updateDocumentApi(docId, { title: newTitle })
-        .then((updated) => { if (updated) updateDocument(docId, updated); })
+        .then((updated) => { if (updated) updateDocument(docId, updated as any); })
         .catch((err) => console.error("Failed to save title", err));
     }
   };
@@ -493,6 +504,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
       updateDocument(docId, { icon: emoji });
     }
     setShowEmojiPicker(false);
+    setShowAddEmojiPopover(false);
   };
 
   const handleCoverSelect = (coverUrl: string) => {
@@ -650,13 +662,13 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
   return (
     <div className="flex h-full w-full overflow-hidden">
       {/* Main Content Area - Left Side */}
-      <div className="flex-1 overflow-y-auto bg-white">
+      <div className="flex-1 overflow-y-auto bg-background text-foreground animate-fadeIn duration-200">
 
         {/* Cover Image Section */}
         <div className="relative flex-shrink-0">
           {currentCover && typeof currentCover === 'string' && (
             <div className="w-full h-64 relative group" style={getCoverStyle(currentCover)}>
-              <Button onClick={handleRemoveCover} variant="secondary" size="sm" className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button onClick={handleRemoveCover} variant="secondary" size="sm" className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 dark:bg-card/80 hover:bg-background dark:hover:bg-card text-foreground">
                 <X className="w-4 h-4 mr-1" />
                 Remove Cover
               </Button>
@@ -666,13 +678,13 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
           {currentIcon && currentCover && (
             <div className="absolute bottom-0 left-0 max-w-5xl w-full mx-auto px-16 transform translate-y-1/2 z-10">
               <div className="relative group inline-block">
-                <div className="bg-white rounded-lg p-3 shadow-lg">
+                <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
                   <span className="text-6xl leading-none block">{currentIcon}</span>
                 </div>
-                <Popover>
+                <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full shadow-md hover:shadow-lg transition-all opacity-0 group-hover:opacity-100 h-8 w-8">
-                      <MdOutlineModeEdit className="w-4 h-4 text-gray-600" />
+                    <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full shadow-md hover:shadow-lg transition-all opacity-0 group-hover:opacity-100 h-8 w-8 bg-background dark:bg-card">
+                      <MdOutlineModeEdit className="w-4 h-4 text-muted-foreground" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -692,17 +704,17 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
             <div className="flex items-center gap-3 no-print">
               <Avatar className="h-6 w-6">
                 <AvatarImage src={user?.profilePictureUrl || ""} alt={user?.name || "User"} />
-                <AvatarFallback className="bg-[#001F3F] text-white">
+                <AvatarFallback className="bg-primary text-primary-foreground">
                   {user?.name?.charAt(0)?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span className="font-medium">{user?.name || "user"}</span>
-                <span className="text-gray-400">•</span>
+                <span className="text-muted-foreground/60">•</span>
                 <span>Last updated {formatTime(lastUpdated)}</span>
                 {docId && (
                   <>
-                    <span className="text-gray-400">•</span>
+                    <span className="text-muted-foreground/60">•</span>
                     <span title="Sync status">
                       {!token && "Sign in to sync"}
                       {token && syncStatus === "disconnected" && "Offline"}
@@ -721,10 +733,10 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
             <div className="mb-4">
               <div className="relative group inline-block">
                 <span className="text-6xl leading-none block">{currentIcon}</span>
-                <Popover>
+                <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full shadow-md hover:shadow-lg transition-all opacity-0 group-hover:opacity-100 h-8 w-8">
-                      <MdOutlineModeEdit className="w-4 h-4 text-gray-600" />
+                    <Button variant="outline" size="icon" className="absolute -bottom-2 -right-2 rounded-full shadow-md hover:shadow-lg transition-all opacity-0 group-hover:opacity-100 h-8 w-8 bg-background dark:bg-card">
+                      <MdOutlineModeEdit className="w-4 h-4 text-muted-foreground" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -738,9 +750,9 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
           {/* Title */}
           <div className="mb-4">
             {isEditingTitle ? (
-              <input ref={titleInputRef} type="text" value={currentTitle} onChange={handleTitleChange} onBlur={handleTitleBlur} onKeyDown={handleTitleKeyDown} className="text-4xl font-bold w-full border-none outline-none focus:ring-0 p-0" placeholder="Untitled" />
+              <input ref={titleInputRef} type="text" value={currentTitle} onChange={handleTitleChange} onBlur={handleTitleBlur} onKeyDown={handleTitleKeyDown} className="text-4xl font-bold w-full border-none outline-none focus:ring-0 p-0 bg-transparent text-foreground" placeholder="Untitled" />
             ) : (
-              <h1 onClick={handleTitleClick} className="text-4xl font-bold cursor-text hover:bg-gray-50 px-1 py-2 rounded">
+              <h1 onClick={handleTitleClick} className="text-4xl font-bold cursor-text hover:bg-muted px-1 py-2 rounded text-foreground">
                 {displayTitle}
               </h1>
             )}
@@ -781,7 +793,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
               {docMembers.slice(0, 4).map((userId, index) => {
                 const member = getMemberDetails(userId);
                 const userName = member?.user?.name || member?.name || "Unknown";
-                const userImage = member?.user?.profilePictureUrl || member?.profilePictureUrl;
+                const userImage = member?.user?.avatar || member?.profilePicture;
                 return (
                   <Avatar key={index} className="h-8 w-8 border-2 border-white">
                     {userImage && <AvatarImage src={userImage} />}
@@ -802,16 +814,16 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
             <Popover open={isMembersOpen} onOpenChange={setIsMembersOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 shadow-sm">
-                  <Users className="h-4 w-4 text-gray-500" />
+                  <Users className="h-4 w-4 text-muted-foreground" />
                   Members
                   {docMembers.length > 0 && (
-                    <Badge variant="secondary" className="ml-1 bg-gray-100 text-gray-700">
+                    <Badge variant="secondary" className="ml-1 bg-muted text-foreground">
                       {docMembers.length}
                     </Badge>
                   )}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-[400px] p-4 border border-b-[5px] border-b-[#001F3F]" align="start">
+              <PopoverContent className="w-[400px] p-4 border border-border border-b-[5px] border-b-primary bg-popover text-popover-foreground shadow-lg rounded-md" align="start">
                 <DocMembersSection
                   docId={docId || ""}
                   members={docMembers}
@@ -830,10 +842,10 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
             </Popover>
 
             {/* Add Emoji Button */}
-            <Popover>
+            <Popover open={showAddEmojiPopover} onOpenChange={setShowAddEmojiPopover}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 shadow-sm">
-                  <Smile className="w-4 h-4 text-gray-500" />
+                  <Smile className="w-4 h-4 text-muted-foreground" />
                   Add Emoji
                 </Button>
               </PopoverTrigger>
@@ -843,58 +855,58 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
             </Popover>
 
             {/* Add Cover Button */}
-            <DropdownMenu>
+            <DropdownMenu open={showCoverPicker} onOpenChange={setShowCoverPicker}>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2 shadow-sm">
-                  <ImageIcon className="w-4 h-4 text-gray-500" />
+                  <ImageIcon className="w-4 h-4 text-muted-foreground" />
                   Add Cover
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-125 p-0" align="start">
+              <DropdownMenuContent className="w-125 p-0 bg-popover border border-border text-popover-foreground shadow-lg rounded-md animate-fadeIn duration-150" align="start">
                 <Tabs defaultValue="gallery" className="w-full">
-                  <div className="flex items-center justify-between px-3 py-2 border-b">
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-border">
                     <TabsList className="grid grid-cols-4 bg-transparent p-0 h-auto gap-4">
                       <TabsTrigger
                         value="gallery"
-                        className="relative rounded-none border-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 data-[state=active]:text-[#001F3F] data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#001F3F] after:transition-transform after:duration-300 after:ease-in-out after:scale-x-0 data-[state=active]:after:scale-x-100"
+                        className="relative rounded-none border-0 bg-transparent px-0 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:text-primary data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary after:transition-transform after:duration-300 after:ease-in-out after:scale-x-0 data-[state=active]:after:scale-x-100"
                       >
                         Gallery
                       </TabsTrigger>
                       <TabsTrigger
                         value="upload"
-                        className="relative rounded-none border-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 data-[state=active]:text-[#001F3F] data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#001F3F] after:transition-transform after:duration-300 after:ease-in-out after:scale-x-0 data-[state=active]:after:scale-x-100"
+                        className="relative rounded-none border-0 bg-transparent px-0 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:text-primary data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary after:transition-transform after:duration-300 after:ease-in-out after:scale-x-0 data-[state=active]:after:scale-x-100"
                       >
                         Upload
                       </TabsTrigger>
                       <TabsTrigger
                         value="link"
-                        className="relative rounded-none border-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 data-[state=active]:text-[#001F3F] data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#001F3F] after:transition-transform after:duration-300 after:ease-in-out after:scale-x-0 data-[state=active]:after:scale-x-100"
+                        className="relative rounded-none border-0 bg-transparent px-0 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:text-primary data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary after:transition-transform after:duration-300 after:ease-in-out after:scale-x-0 data-[state=active]:after:scale-x-100"
                       >
                         Link
                       </TabsTrigger>
                       <TabsTrigger
                         value="search"
-                        className="relative rounded-none border-0 bg-transparent px-0 py-2 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 data-[state=active]:text-[#001F3F] data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-[#001F3F] after:transition-transform after:duration-300 after:ease-in-out after:scale-x-0 data-[state=active]:after:scale-x-100"
+                        className="relative rounded-none border-0 bg-transparent px-0 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:text-primary data-[state=active]:shadow-none after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-primary after:transition-transform after:duration-300 after:ease-in-out after:scale-x-0 data-[state=active]:after:scale-x-100"
                       >
                         Search
                       </TabsTrigger>
                     </TabsList>
-                    <Button variant="ghost" size="sm" className="text-gray-500 text-xs h-auto p-1">
+                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground text-xs h-auto p-1">
                       Remove
                     </Button>
                   </div>
 
                   {/* Gallery Tab */}
-                  <TabsContent value="gallery" className="p-3 max-h-80 overflow-y-auto m-0">
+                  <TabsContent value="gallery" className="p-3 max-h-80 overflow-y-auto m-0 bg-popover text-popover-foreground">
                     <div className="mb-4">
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Gradients</h4>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Gradients</h4>
                       <div className="grid grid-cols-4 gap-2">
                         {COVER_IMAGES.SOLID_COLORS.map((gradient, index) => (
                           <Button
                             variant="ghost"
                             key={index}
                             onClick={() => handleCoverSelect(gradient)}
-                            className="aspect-video p-0 rounded-md hover:ring-2 hover:ring-[#001F3F] transition-all h-auto"
+                            className="aspect-video p-0 rounded-md hover:ring-2 hover:ring-primary transition-all h-auto"
                             style={{ background: gradient }}
                           />
                         ))}
@@ -902,14 +914,14 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                     </div>
 
                     <div className="mb-4">
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Nature</h4>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Nature</h4>
                       <div className="grid grid-cols-4 gap-2">
                         {COVER_IMAGES.NATURE.map((imageUrl, index) => (
                           <Button
                             variant="ghost"
                             key={index}
                             onClick={() => handleCoverSelect(imageUrl)}
-                            className="aspect-video p-0 rounded-md hover:ring-2 hover:ring-[#001F3F] transition-all overflow-hidden h-auto"
+                            className="aspect-video p-0 rounded-md hover:ring-2 hover:ring-primary transition-all overflow-hidden h-auto"
                           >
                             <img src={imageUrl} alt="Cover" className="w-full h-full object-cover" />
                           </Button>
@@ -919,8 +931,8 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                   </TabsContent>
 
                   {/* Upload Tab */}
-                  <TabsContent value="upload" className="p-4 m-0">
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-[#001F3F] transition-colors">
+                  <TabsContent value="upload" className="p-4 m-0 bg-popover text-popover-foreground">
+                    <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors bg-card">
                       <Input
                         type="file"
                         accept="image/*"
@@ -929,13 +941,13 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                         id="cover-upload"
                       />
                       <Label htmlFor="cover-upload" className="cursor-pointer flex flex-col items-center">
-                        <div className="w-12 h-12 mb-3 flex items-center justify-center border-2 border-[#001F3F] rounded-lg">
-                          <ImageIcon className="w-6 h-6 text-[#001F3F]" />
+                        <div className="w-12 h-12 mb-3 flex items-center justify-center border-2 border-primary rounded-lg bg-muted">
+                          <ImageIcon className="w-6 h-6 text-primary" />
                         </div>
-                        <p className="text-sm text-gray-600 mb-1">
-                          Drop picture here or <span className="text-[#001F3F] font-medium underline">Browse</span>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          Drop picture here or <span className="text-primary font-medium underline">Browse</span>
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-muted-foreground/80">
                           Images wider than 1480px are recommended.
                         </p>
                       </Label>
@@ -943,11 +955,11 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                   </TabsContent>
 
                   {/* Link Tab */}
-                  <TabsContent value="link" className="p-4 m-0">
+                  <TabsContent value="link" className="p-4 m-0 bg-popover text-popover-foreground">
                     <Input
                       type="text"
                       placeholder="Paste image link..."
-                      className="w-full h-9 focus-visible:ring-[#001F3F]"
+                      className="w-full h-9 focus-visible:ring-primary bg-background dark:bg-card text-foreground border-border"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
                           const input = e.target as HTMLInputElement;
@@ -958,19 +970,19 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                         }
                       }}
                     />
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-muted-foreground mt-2">
                       Press Enter to add image from URL
                     </p>
                   </TabsContent>
 
                   {/* Search Images Tab */}
-                  <TabsContent value="search" className="p-4 m-0">
+                  <TabsContent value="search" className="p-4 m-0 bg-popover text-popover-foreground">
                     <Input
                       type="text"
                       placeholder="Search for images..."
-                      className="w-full h-9 focus-visible:ring-[#001F3F]"
+                      className="w-full h-9 focus-visible:ring-primary bg-background dark:bg-card text-foreground border-border"
                     />
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-muted-foreground mt-2">
                       Search for images from Unsplash
                     </p>
                   </TabsContent>
@@ -983,16 +995,16 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
 
               const linkedProjectsList = (currentDoc?.pageLinkedProjects || []).map(id =>
                 projects.find(p => p.id === id)
-              ).filter(Boolean) || [];
+              ).filter((p): p is NonNullable<typeof p> => !!p);
               const linkedTeamsList = (currentDoc?.pageLinkedTeams || []).map(id =>
                 teams.find(t => t.id === id)
-              ).filter(Boolean) || [];
+              ).filter((t): t is NonNullable<typeof t> => !!t);
               const linkedPortfoliosList = (currentDoc?.pageLinkedPortfolios || []).map(id =>
                 portfolios.find(p => p.id === id)
-              ).filter(Boolean) || [];
+              ).filter((p): p is NonNullable<typeof p> => !!p);
               const linkedDocumentsList = (currentDoc?.pageLinkedDocuments || []).map(linkedId =>
                 documents.get(linkedId)
-              ).filter(Boolean) || [];
+              ).filter((d): d is NonNullable<typeof d> => !!d);
 
               const totalRelationships = (currentDoc?.pageLinkedProjects?.length || 0) +
                 (currentDoc?.pageLinkedTeams?.length || 0) +
@@ -1006,25 +1018,25 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-2 shadow-sm">
-                          <span className="font-medium text-gray-700">Linked Items</span>
-                          <span className="bg-[#fdf2e9] text-[#F68C1F] border border-[#F68C1F] min-w-[18px] h-[18px] flex items-center justify-center rounded-sm text-[10px] font-bold px-1">
+                          <span className="font-medium text-foreground">Linked Items</span>
+                          <span className="bg-orange-500/10 dark:bg-orange-500/20 text-[#F68C1F] dark:text-orange-400 border border-[#F68C1F]/30 dark:border-orange-500/50 min-w-[18px] h-[18px] flex items-center justify-center rounded-sm text-[10px] font-bold px-1">
                             {totalRelationships}
                           </span>
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-96 p-0" align="start">
-                        <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto">
+                      <PopoverContent className="w-96 p-0 bg-popover border border-border text-popover-foreground shadow-lg rounded-md" align="start">
+                        <div className="p-4 space-y-4 max-h-[400px] overflow-y-auto bg-popover text-popover-foreground">
                           {/* Page Links Section */}
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <h4 className="text-sm font-semibold text-gray-700">Page links</h4>
+                              <h4 className="text-sm font-semibold text-foreground">Page links</h4>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0"
+                                className="h-6 w-6 p-0 hover:bg-muted"
                                 onClick={() => setShowRelationshipTabs(!showRelationshipTabs)}
                               >
-                                <Plus className="w-4 h-4 text-gray-500" />
+                                <Plus className="w-4 h-4 text-muted-foreground" />
                               </Button>
                             </div>
 
@@ -1032,13 +1044,13 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                             {showRelationshipTabs ? (
                               // Show tabs interface
                               <div className="space-y-2">
-                                <div className="flex border-b border-gray-200 px-1 pt-1">
+                                <div className="flex border-b border-border px-1 pt-1">
                                   <Button
                                     variant="ghost"
                                     onClick={() => setActiveTab("project")}
-                                    className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto ${activeTab === "project"
-                                      ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                      : "text-gray-500 hover:text-gray-700"
+                                    className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto hover:text-foreground ${activeTab === "project"
+                                      ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                      : "text-muted-foreground hover:text-foreground"
                                       }`}
                                   >
                                     Project
@@ -1046,9 +1058,9 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                   <Button
                                     variant="ghost"
                                     onClick={() => setActiveTab("team")}
-                                    className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto ${activeTab === "team"
-                                      ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                      : "text-gray-500 hover:text-gray-700"
+                                    className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto hover:text-foreground ${activeTab === "team"
+                                      ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                      : "text-muted-foreground hover:text-foreground"
                                       }`}
                                   >
                                     Teams
@@ -1056,9 +1068,9 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                   <Button
                                     variant="ghost"
                                     onClick={() => setActiveTab("portfolio")}
-                                    className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto ${activeTab === "portfolio"
-                                      ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                      : "text-gray-500 hover:text-gray-700"
+                                    className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto hover:text-foreground ${activeTab === "portfolio"
+                                      ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                      : "text-muted-foreground hover:text-foreground"
                                       }`}
                                   >
                                     Portfolio
@@ -1066,9 +1078,9 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                   <Button
                                     variant="ghost"
                                     onClick={() => setActiveTab("document")}
-                                    className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto ${activeTab === "document"
-                                      ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                      : "text-gray-500 hover:text-gray-700"
+                                    className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto hover:text-foreground ${activeTab === "document"
+                                      ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                      : "text-muted-foreground hover:text-foreground"
                                       }`}
                                   >
                                     Documents
@@ -1078,7 +1090,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                 <div className="p-2">
                                   {activeTab === "project" && (
                                     <div>
-                                      <p className="text-xs text-gray-500 mb-3">Recent Projects</p>
+                                      <p className="text-xs text-muted-foreground mb-3">Recent Projects</p>
                                       <div className="max-h-60 overflow-y-auto">
                                         {projects.map((project) => {
                                           const isSelected = currentDoc?.pageLinkedProjects?.includes(project.id!);
@@ -1086,7 +1098,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                           return (
                                             <div
                                               key={project.id}
-                                              className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                              className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                                 }`}
                                               onClick={() => {
                                                 if (isSelected) {
@@ -1106,10 +1118,10 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                                   }
                                                 }}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                               />
 
-                                              <span className="text-sm text-gray-900 flex-1">
+                                              <span className="text-sm text-foreground flex-1">
                                                 {project.name}
                                               </span>
                                             </div>
@@ -1121,7 +1133,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
 
                                   {activeTab === "team" && (
                                     <div>
-                                      <p className="text-xs text-gray-500 mb-3">Recent Teams</p>
+                                      <p className="text-xs text-muted-foreground mb-3">Recent Teams</p>
                                       <div className="space-y-1 max-h-60 overflow-y-auto">
                                         {teams.map((team) => {
                                           const isSelected = currentDoc?.pageLinkedTeams?.includes(team.id!);
@@ -1129,7 +1141,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                           return (
                                             <div
                                               key={team.id}
-                                              className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                              className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                                 }`}
                                               onClick={() => {
                                                 if (isSelected) {
@@ -1149,10 +1161,10 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                                   }
                                                 }}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                               />
 
-                                              <span className="text-sm text-gray-900 flex-1">
+                                              <span className="text-sm text-foreground flex-1">
                                                 {team.name}
                                               </span>
                                             </div>
@@ -1164,7 +1176,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
 
                                   {activeTab === "portfolio" && (
                                     <div>
-                                      <p className="text-xs text-gray-500 mb-3">Recent Portfolios</p>
+                                      <p className="text-xs text-muted-foreground mb-3">Recent Portfolios</p>
                                       <div className="space-y-1 max-h-60 overflow-y-auto">
                                         {portfolios.length > 0 ? (
                                           portfolios.map((portfolio) => {
@@ -1172,7 +1184,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                             return (
                                               <div
                                                 key={portfolio.id}
-                                                className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                                className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                                   }`}
                                                 onClick={() => {
                                                   if (isSelected) {
@@ -1192,16 +1204,16 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                                     }
                                                   }}
                                                   onClick={(e) => e.stopPropagation()}
-                                                  className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                 />
-                                                <span className="text-sm text-gray-900 flex-1">
+                                                <span className="text-sm text-foreground flex-1">
                                                   {portfolio.name}
                                                 </span>
                                               </div>
                                             );
                                           })
                                         ) : (
-                                          <div className="text-sm text-gray-500 py-8 text-center">
+                                          <div className="text-sm text-muted-foreground py-8 text-center">
                                             No portfolios available
                                           </div>
                                         )}
@@ -1210,7 +1222,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                   )}
                                   {activeTab === "document" && (
                                     <div>
-                                      <p className="text-xs text-gray-500 mb-3">Recent Documents</p>
+                                      <p className="text-xs text-muted-foreground mb-3">Recent Documents</p>
                                       <div className="space-y-1 max-h-60 overflow-y-auto">
                                         {docList.map((docItem) => {
                                           const isSelected = rootDoc?.linkedDocuments?.includes(docItem.id);
@@ -1218,7 +1230,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                           return (
                                             <div
                                               key={docItem.id}
-                                              className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                              className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                                 }`}
                                               onClick={() => {
                                                 if (isSelected) {
@@ -1238,9 +1250,9 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                                   }
                                                 }}
                                                 onClick={(e) => e.stopPropagation()}
-                                                className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                                className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                               />
-                                              <span className="text-sm text-gray-900 flex-1">
+                                              <span className="text-sm text-foreground flex-1">
                                                 {docItem.title}
                                               </span>
                                             </div>
@@ -1253,21 +1265,21 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                               </div>
                             ) : (
                               // Show list of linked items
-                              <div className="space-y-1 bg-gray-50 rounded-lg p-2">
+                              <div className="space-y-1 bg-muted/50 rounded-lg p-2">
                                 {linkedProjectsList.map((project, idx) => (
                                   <div
                                     key={`project-${idx}`}
-                                    className="flex items-center gap-2 py-1.5 px-2 bg-white rounded hover:bg-gray-50 group"
+                                    className="flex items-center gap-2 py-1.5 px-2 bg-card rounded hover:bg-muted group"
                                   >
                                     <span className="text-base">📦</span>
-                                    <span className="text-sm text-gray-700 flex-1">{project.name}</span>
+                                    <span className="text-sm text-foreground flex-1">{project.name}</span>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => removeProjectFromDocument(rootId, project.id!)}
+                                      onClick={() => removeProjectFromDocument(rootId!, project.id)}
                                     >
-                                      <X className="w-3 h-3 text-gray-500" />
+                                      <X className="w-3 h-3 text-muted-foreground" />
                                     </Button>
                                   </div>
                                 ))}
@@ -1275,17 +1287,17 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                 {linkedTeamsList.map((team, idx) => (
                                   <div
                                     key={`team-${idx}`}
-                                    className="flex items-center gap-2 py-1.5 px-2 bg-white rounded hover:bg-gray-50 group"
+                                    className="flex items-center gap-2 py-1.5 px-2 bg-card rounded hover:bg-muted group"
                                   >
                                     <span className="text-base">👥</span>
-                                    <span className="text-sm text-gray-700 flex-1">{team.name}</span>
+                                    <span className="text-sm text-foreground flex-1">{team.name}</span>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => removeTeamFromDocument(rootId, team.id!)}
+                                      onClick={() => removeTeamFromDocument(rootId!, team.id)}
                                     >
-                                      <X className="w-3 h-3 text-gray-500" />
+                                      <X className="w-3 h-3 text-muted-foreground" />
                                     </Button>
                                   </div>
                                 ))}
@@ -1293,17 +1305,17 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                 {linkedPortfoliosList.map((portfolio, idx) => (
                                   <div
                                     key={`portfolio-${idx}`}
-                                    className="flex items-center gap-2 py-1.5 px-2 bg-white rounded hover:bg-gray-50 group"
+                                    className="flex items-center gap-2 py-1.5 px-2 bg-card rounded hover:bg-muted group"
                                   >
                                     <span className="text-base">📂</span>
-                                    <span className="text-sm text-gray-700 flex-1">{portfolio.name}</span>
+                                    <span className="text-sm text-foreground flex-1">{portfolio.name}</span>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => removePortfolioFromDocument(rootId, portfolio.id)}
+                                      onClick={() => removePortfolioFromDocument(rootId!, portfolio.id)}
                                     >
-                                      <X className="w-3 h-3 text-gray-500" />
+                                      <X className="w-3 h-3 text-muted-foreground" />
                                     </Button>
                                   </div>
                                 ))}
@@ -1311,17 +1323,17 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                 {linkedDocumentsList.map((doc, idx) => (
                                   <div
                                     key={`doc-${idx}`}
-                                    className="flex items-center gap-2 py-1.5 px-2 bg-white rounded hover:bg-gray-50 group"
+                                    className="flex items-center gap-2 py-1.5 px-2 bg-card rounded hover:bg-muted group"
                                   >
                                     <span className="text-base">📄</span>
-                                    <span className="text-sm text-gray-700 flex-1">{doc.title}</span>
+                                    <span className="text-sm text-foreground flex-1">{doc.title}</span>
                                     <Button
                                       variant="ghost"
                                       size="sm"
                                       className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => removeDocumentFromDocument(rootId, doc.id)}
+                                      onClick={() => removeDocumentFromDocument(rootId!, doc.id)}
                                     >
-                                      <X className="w-3 h-3 text-gray-500" />
+                                      <X className="w-3 h-3 text-muted-foreground" />
                                     </Button>
                                   </div>
                                 ))}
@@ -1329,7 +1341,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                 {/* Link Task or Doc - triggers tabs */}
                                 <Button
                                   variant="ghost"
-                                  className="flex items-center justify-start gap-2 py-1.5 px-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded w-full text-left h-auto font-normal"
+                                  className="flex items-center justify-start gap-2 py-1.5 px-2 text-muted-foreground hover:text-foreground hover:bg-card rounded w-full text-left h-auto font-normal"
                                   onClick={() => setShowRelationshipTabs(true)}
                                 >
                                   <Plus className="w-4 h-4" />
@@ -1346,19 +1358,19 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-2 shadow-sm">
-                          <Plus className="w-4 h-4 text-gray-500" />
+                          <Plus className="w-4 h-4 text-muted-foreground" />
                           Add Linked Items
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent className="w-80 p-0" align="start">
-                        <div className="flex border-b border-gray-200 px-1 pt-1">
-                          <div className="flex border-b border-gray-200 px-1 pt-1">
+                      <DropdownMenuContent className="w-80 p-0 bg-popover border border-border text-popover-foreground shadow-lg rounded-md" align="start">
+                        <div className="flex border-b border-border px-1 pt-1">
+                          <div className="flex border-b border-border px-1 pt-1">
                             <Button
                               variant="ghost"
                               onClick={() => setActiveTab("project")}
-                              className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto ${activeTab === "project"
-                                ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                : "text-gray-500 hover:text-gray-700"
+                              className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto hover:text-foreground ${activeTab === "project"
+                                ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                             >
                               Project
@@ -1366,9 +1378,9 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                             <Button
                               variant="ghost"
                               onClick={() => setActiveTab("team")}
-                              className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto ${activeTab === "team"
-                                ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                : "text-gray-500 hover:text-gray-700"
+                              className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto hover:text-foreground ${activeTab === "team"
+                                ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                             >
                               Teams
@@ -1376,9 +1388,9 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                             <Button
                               variant="ghost"
                               onClick={() => setActiveTab("portfolio")}
-                              className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto ${activeTab === "portfolio"
-                                ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                : "text-gray-500 hover:text-gray-700"
+                              className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto hover:text-foreground ${activeTab === "portfolio"
+                                ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                             >
                               Portfolio
@@ -1386,9 +1398,9 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                             <Button
                               variant="ghost"
                               onClick={() => setActiveTab("document")}
-                              className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto ${activeTab === "document"
-                                ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                : "text-gray-500 hover:text-gray-700"
+                              className={`px-2 py-2 text-sm font-medium transition-colors rounded-none h-auto hover:text-foreground ${activeTab === "document"
+                                ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                : "text-muted-foreground hover:text-foreground"
                                 }`}
                             >
                               Documents
@@ -1430,16 +1442,16 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                             };
 
                             return (
-                              <div className="py-8 flex flex-col items-center justify-center text-center px-4">
+                              <div className="py-8 flex flex-col items-center justify-center text-center px-4 bg-popover text-popover-foreground">
                                 <img
                                   src={config[activeTab].image}
                                   alt={config[activeTab].title}
-                                  className="w-60 h-32 mb-4 opacity-80"
+                                  className="w-60 h-32 mb-4 opacity-80 dark:brightness-90 dark:contrast-125"
                                 />
-                                <h3 className="text-lg font-semibold text-gray-900 mb-1 leading-tight">
+                                <h3 className="text-lg font-semibold text-foreground mb-1 leading-tight">
                                   {config[activeTab].title}
                                 </h3>
-                                <p className="text-xs text-gray-500 leading-normal max-w-[240px]">
+                                <p className="text-xs text-muted-foreground leading-normal max-w-[240px]">
                                   {config[activeTab].desc}
                                 </p>
                               </div>
@@ -1447,8 +1459,8 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                           })()}
 
                           {activeTab === "project" && projects.length > 0 && (
-                            <div>
-                              <p className="text-xs text-gray-500 mb-3">Recent Projects</p>
+                            <div className="bg-popover text-popover-foreground">
+                              <p className="text-xs text-muted-foreground mb-3">Recent Projects</p>
                               <div className="max-h-60 overflow-y-auto">
                                 {projects.map((project) => {
                                   const isSelected = selectedProjects.includes(project.id!);
@@ -1456,7 +1468,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                   return (
                                     <div
                                       key={project.id}
-                                      className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                      className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                         }`}
                                       onClick={() => {
                                         if (isSelected) {
@@ -1476,10 +1488,10 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                           }
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                       />
 
-                                      <span className="text-sm text-gray-900 flex-1">
+                                      <span className="text-sm text-foreground flex-1">
                                         {project.name}
                                       </span>
                                     </div>
@@ -1490,8 +1502,8 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                           )}
 
                           {activeTab === "team" && teams.length > 0 && (
-                            <div>
-                              <p className="text-xs text-gray-500 mb-3">Recent Teams</p>
+                            <div className="bg-popover text-popover-foreground">
+                              <p className="text-xs text-muted-foreground mb-3">Recent Teams</p>
                               <div className="space-y-1 max-h-60 overflow-y-auto">
                                 {teams.map((team) => {
                                   const isSelected = selectedTeams.includes(team.id!);
@@ -1499,7 +1511,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                   return (
                                     <div
                                       key={team.id}
-                                      className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                      className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                         }`}
                                       onClick={() => {
                                         if (isSelected) {
@@ -1519,10 +1531,10 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                           }
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                       />
 
-                                      <span className="text-sm text-gray-900 flex-1">
+                                      <span className="text-sm text-foreground flex-1">
                                         {team.name}
                                       </span>
                                     </div>
@@ -1533,8 +1545,8 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                           )}
 
                           {activeTab === "portfolio" && portfolios.length > 0 && (
-                            <div>
-                              <p className="text-xs text-gray-500 mb-3">Recent Portfolios</p>
+                            <div className="bg-popover text-popover-foreground">
+                              <p className="text-xs text-muted-foreground mb-3">Recent Portfolios</p>
                               <div className="space-y-1 max-h-60 overflow-y-auto">
                                 {portfolios.map((portfolio) => {
                                   const isSelected = selectedPortfolios.includes(portfolio.id);
@@ -1542,7 +1554,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                   return (
                                     <div
                                       key={portfolio.id}
-                                      className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                      className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                         }`}
                                       onClick={() => {
                                         if (isSelected) {
@@ -1562,10 +1574,10 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                           }
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                       />
 
-                                      <span className="text-sm text-gray-900 flex-1">
+                                      <span className="text-sm text-foreground flex-1">
                                         {portfolio.name}
                                       </span>
                                     </div>
@@ -1576,8 +1588,8 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                           )}
 
                           {activeTab === "document" && docList.length > 0 && (
-                            <div>
-                              <p className="text-xs text-gray-500 mb-3">Recent Documents</p>
+                            <div className="bg-popover text-popover-foreground">
+                              <p className="text-xs text-muted-foreground mb-3">Recent Documents</p>
                               <div className="space-y-1 max-h-60 overflow-y-auto">
                                 {docList.map((doc) => {
                                   const isSelected = selectedDocuments.includes(doc.id);
@@ -1585,7 +1597,7 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                   return (
                                     <div
                                       key={doc.id}
-                                      className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                      className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                         }`}
                                       onClick={() => {
                                         if (isSelected) {
@@ -1605,9 +1617,9 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
                                           }
                                         }}
                                         onClick={(e) => e.stopPropagation()}
-                                        className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                       />
-                                      <span className="text-sm text-gray-900 flex-1">
+                                      <span className="text-sm text-foreground flex-1">
                                         {doc.title}
                                       </span>
                                     </div>
@@ -1629,19 +1641,19 @@ export default function DocsDetailsPage({ params }: { params: { id: string } }) 
 
 
           {/* Editor */}
-          <div className="pb-20 relative min-h-[400px]">
-            {isValidDocId && token && (syncStatus === 'connecting' || syncStatus === 'connected' || syncStatus === 'disconnected') && syncStatus !== 'synced' ? (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/50 z-10">
+          <div className="pb-20 relative min-h-[400px] bg-background text-foreground">
+            {isValidDocId && token && syncStatus !== 'synced' ? (
+              <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
                 <div className="flex flex-col items-center gap-2">
-                  <Spinner className="w-8 h-8 text-[#001F3F]" />
-                  <span className="text-sm text-gray-500 font-medium">Loading document...</span>
+                  <Spinner className="w-8 h-8 text-primary" />
+                  <span className="text-sm text-muted-foreground font-medium">Loading document...</span>
                 </div>
               </div>
             ) : null}
             <BlockNoteView
               key={`${docId}-${syncStatus === 'synced' ? "synced" : "local"}`}
               editor={editor}
-              theme="light"
+              theme={resolvedTheme === "dark" ? "dark" : "light"}
               editable={!isLockedByBackend}
             />
           </div>

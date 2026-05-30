@@ -582,14 +582,14 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
     const paddingLeft = level * 20 + 12;
 
     return (
-      <div key={item.id} className="relative">
+      <div className="relative" key={item.id}>
         <div
           className={`
             group flex items-center gap-2 px-2 py-1.5 rounded-md 
             transition-all duration-200 ease-in-out mx-1
             ${isActive
-              ? "bg-[#001F3F] text-white shadow-sm"
-              : "hover:bg-gray-100 text-gray-700"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "hover:bg-muted text-foreground"
             }
           `}
           style={{ paddingLeft: `${paddingLeft}px` }}
@@ -606,12 +606,12 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
             >
               <ChevronRight
                 className={`w-3.5 h-3.5 transition-transform duration-200 ${item.isOpen ? "rotate-90" : ""
-                  } ${isActive ? "text-white" : "text-gray-500"}`}
+                  } ${isActive ? "text-primary-foreground" : "text-muted-foreground"}`}
               />
             </Button>
           ) : (
             <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
-              <FileText className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-gray-400"}`} />
+              <FileText className={`w-3.5 h-3.5 ${isActive ? "text-primary-foreground" : "text-muted-foreground"}`} />
             </div>
           )}
 
@@ -623,7 +623,7 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
               onChange={(e) => setEditingTitle(e.target.value)}
               onBlur={saveTitle}
               onKeyDown={handleKeyDown}
-              className="text-sm flex-1 h-7 px-2 py-1 border-gray-300 focus-visible:ring-[#001F3F] focus-visible:border-[#001F3F]"
+              className="text-sm flex-1 h-7 px-2 py-1 border-border focus-visible:ring-primary focus-visible:border-primary text-foreground bg-background"
               onClick={(e) => e.stopPropagation()}
             />
           ) : (
@@ -649,15 +649,15 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                   addSubPage(item.id, e);
                 }}
                 className={`group/add p-1 h-auto w-auto rounded transition-all ${isActive
-                  ? "hover:bg-white/20"
-                  : "hover:bg-[#001F3F]/10"
+                  ? "hover:bg-primary-foreground/20"
+                  : "hover:bg-primary/10"
                   }`}
                 title="Add subpage"
               >
                 <Plus
                   className={`w-3.5 h-3.5 transition-colors ${isActive
-                    ? "text-white group-hover/add:text-gray-200"
-                    : "text-gray-600 group-hover/add:text-[#001F3F]"
+                    ? "text-primary-foreground group-hover/add:text-primary-foreground/80"
+                    : "text-muted-foreground group-hover/add:text-primary"
                     }`}
                 />
               </Button>
@@ -668,22 +668,22 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                     variant="ghost"
                     size="icon"
                     className={`group/more p-1 h-auto w-auto rounded transition-all ${isActive
-                      ? "hover:bg-white/20"
-                      : "hover:bg-[#001F3F]/10"
+                      ? "hover:bg-primary-foreground/20"
+                      : "hover:bg-primary/10"
                       }`}
                     title="More options"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <MoreHorizontal
                       className={`w-3.5 h-3.5 transition-colors ${isActive
-                        ? "text-white group-hover/more:text-gray-200"
-                        : "text-gray-600 group-hover/more:text-[#001F3F]"
+                        ? "text-primary-foreground group-hover/more:text-primary-foreground/80"
+                        : "text-muted-foreground group-hover/more:text-primary"
                         }`}
                     />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
-                  <DropdownMenuLabel className="text-xs font-semibold text-white text-center mx-1 mt-1 mb-2 px-8 py-2 rounded-lg bg-[#001F3F]">
+                <DropdownMenuContent align="start" className="w-56 bg-popover border border-border text-popover-foreground shadow-lg rounded-md">
+                  <DropdownMenuLabel className="text-xs font-semibold text-primary-foreground text-center mx-1 mt-1 mb-2 px-8 py-2 rounded-lg bg-primary">
                     Sharing & Permissions
                   </DropdownMenuLabel>
 
@@ -709,7 +709,7 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                       <Link className="w-4 h-4 mr-2" />
                       <span>Link Page to</span>
                     </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="w-80 p-0">
+                    <DropdownMenuSubContent className="w-80 p-0 bg-popover border border-border text-popover-foreground shadow-lg rounded-md">
                       {(() => {
                         const currentDoc = documents.get(item.id);
 
@@ -724,16 +724,16 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                           return (
                             <div className="p-2 space-y-1">
                               <div className="flex items-center justify-between px-2 py-1 mb-1">
-                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-tight">Linked Items</span>
-                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(true); }}>
-                                  <Plus className="w-4 h-4 text-gray-500" />
+                                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">Linked Items</span>
+                                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(true); }}>
+                                  <Plus className="w-4 h-4" />
                                 </Button>
                               </div>
-                              <div className="space-y-1 bg-gray-50 rounded-lg p-2">
+                              <div className="space-y-1 bg-muted/50 rounded-lg p-2">
                                 {linkedProjectsList.map(p => {
                                   const avatar = getProjectAvatar(p);
                                   return (
-                                    <div key={p?.id} className="flex items-center gap-2 py-1.5 px-2 bg-white rounded hover:bg-gray-50 group">
+                                    <div key={p?.id} className="flex items-center gap-2 py-1.5 px-2 bg-card border border-border rounded hover:bg-muted group">
                                       {/* Project Icon */}
                                       <div
                                         className="w-5 h-5 rounded shrink-0 flex items-center justify-center overflow-hidden"
@@ -754,48 +754,39 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                                           <span className="text-[10px] font-bold" style={{ color: p?.color ?? "#3B82F6" }}>{p?.name?.charAt(0).toUpperCase()}</span>
                                         )}
                                       </div>
-                                      <span className="text-sm text-gray-700 flex-1 truncate">{p?.name}</span>
+                                      <span className="text-sm text-foreground flex-1 truncate">{p?.name}</span>
                                       <Button
                                         variant="ghost"
                                         size="sm"
                                         className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                         onClick={(e) => { e.stopPropagation(); handleRemoveProject(item.id, p?.id!); }}
                                       >
-                                        <X className="w-3 h-3 text-gray-500" />
+                                        <X className="w-3 h-3 text-muted-foreground" />
                                       </Button>
                                     </div>
                                   );
                                 })}
-                                {/* {linkedTeamsList.map(t => (
-                                  <div key={t?.id} className="flex items-center gap-2 py-1.5 px-2 bg-white rounded hover:bg-gray-50 group">
-                                    <span className="text-base">👥</span>
-                                    <span className="text-sm text-gray-700 flex-1 truncate">{t?.name}</span>
-                                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleRemoveTeam(item.id, t?.id!); }}>
-                                      <X className="w-3 h-3 text-gray-500" />
-                                    </Button>
-                                  </div>
-                                ))} */}
                                 {linkedPortfoliosList.map(p => (
-                                  <div key={p?.id} className="flex items-center gap-2 py-1.5 px-2 bg-white rounded hover:bg-gray-50 group">
+                                  <div key={p?.id} className="flex items-center gap-2 py-1.5 px-2 bg-card border border-border rounded hover:bg-muted group">
                                     <span className="text-base">📂</span>
-                                    <span className="text-sm text-gray-700 flex-1 truncate">{p?.name}</span>
+                                    <span className="text-sm text-foreground flex-1 truncate">{p?.name}</span>
                                     <Button variant="ghost" size="sm" className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleRemovePortfolio(item.id, p?.id!); }}>
-                                      <X className="w-3 h-3 text-gray-500" />
+                                      <X className="w-3 h-3 text-muted-foreground" />
                                     </Button>
                                   </div>
                                 ))}
                                 {linkedDocumentsList.map((d: any) => (
-                                  <div key={d.id} className="flex items-center gap-2 py-1.5 px-2 bg-white rounded hover:bg-gray-50 group">
+                                  <div key={d.id} className="flex items-center gap-2 py-1.5 px-2 bg-card border border-border rounded hover:bg-muted group">
                                     <span className="text-base">📄</span>
-                                    <span className="text-sm text-gray-700 flex-1 truncate">{d.title}</span>
+                                    <span className="text-sm text-foreground flex-1 truncate">{d.title}</span>
                                     <Button variant="ghost" size="sm" className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); handleRemoveDocument(item.id, d.id); }}>
-                                      <X className="w-3 h-3 text-gray-500" />
+                                      <X className="w-3 h-3 text-muted-foreground" />
                                     </Button>
                                   </div>
                                 ))}
                                 <Button
                                   variant="ghost"
-                                  className="flex items-center justify-start gap-2 py-1 px-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded w-full text-left h-auto font-normal"
+                                  className="flex items-center justify-start gap-2 py-1 px-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded w-full text-left h-auto font-normal"
                                   onClick={(e) => { e.stopPropagation(); setShowLinkTabs(true); }}
                                 >
                                   <Plus className="w-3 h-3" />
@@ -810,37 +801,37 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                         return (
                           <>
                             {/* Tabs Header */}
-                            <div className="flex border-b border-gray-200 px-1 pt-1">
+                            <div className="flex border-b border-border px-1 pt-1">
                               <Button
                                 variant="ghost"
                                 onClick={() => setActiveTab("project")}
-                                className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "project" ? "text-gray-900 border-b-2 border-black -mb-[2px]" : "text-gray-500 hover:text-gray-700"}`}
+                                className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "project" ? "text-foreground border-b-2 border-primary -mb-[2px]" : "text-muted-foreground hover:text-foreground"}`}
                               >
                                 Project
                               </Button>
                               <Button
                                 variant="ghost"
                                 onClick={() => setActiveTab("portfolio")}
-                                className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "portfolio" ? "text-gray-900 border-b-2 border-black -mb-[2px]" : "text-gray-500 hover:text-gray-700"}`}
+                                className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "portfolio" ? "text-foreground border-b-2 border-primary -mb-[2px]" : "text-muted-foreground hover:text-foreground"}`}
                               >
                                 Portfolio
                               </Button>
                               {/* <Button
                                 variant="ghost"
                                 onClick={() => setActiveTab("team")}
-                                className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "team" ? "text-gray-900 border-b-2 border-black -mb-[2px]" : "text-gray-500 hover:text-gray-700"}`}
+                                className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "team" ? "text-foreground border-b-2 border-primary -mb-[2px]" : "text-muted-foreground hover:text-foreground"}`}
                               >
                                 Team
                               </Button> */}
                               <Button
                                 variant="ghost"
                                 onClick={() => setActiveTab("document")}
-                                className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "document" ? "text-gray-900 border-b-2 border-black -mb-[2px]" : "text-gray-500 hover:text-gray-700"}`}
+                                className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "document" ? "text-foreground border-b-2 border-primary -mb-[2px]" : "text-muted-foreground hover:text-foreground"}`}
                               >
                                 Documents
                               </Button>
                               {hasLinks && (
-                                <Button variant="ghost" size="sm" className="ml-auto h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(false); }}>
+                                <Button variant="ghost" size="sm" className="ml-auto h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(false); }}>
                                   <ChevronLeft className="w-3.5 h-3.5" />
                                 </Button>
                               )}
@@ -862,8 +853,8 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                                 if (!current.list || current.list.length === 0) {
                                   return (
                                     <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
-                                      <img src={current.image} alt={current.title} className="w-16 h-16 mb-2 object-contain opacity-50" />
-                                      <p className="text-[10px] text-gray-400 font-medium">{current.title}</p>
+                                      <img src={current.image} alt={current.title} className="w-16 h-16 mb-2 object-contain opacity-50 dark:brightness-90 dark:contrast-125" />
+                                      <p className="text-[10px] text-muted-foreground font-medium">{current.title}</p>
                                     </div>
                                   );
                                 }
@@ -878,7 +869,7 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                                     return (
                                       <div
                                         key={p.id}
-                                        className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer"
+                                        className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted cursor-pointer"
                                         onClick={() => isSelected ? handleRemoveProject(item.id, p.id!) : handleAddProject(item.id, p.id!)}
                                       >
                                         <div className="flex items-center gap-2 min-w-0">
@@ -902,9 +893,9 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                                               <span className="text-[10px] font-bold" style={{ color: p.color ?? "#3B82F6" }}>{p.name?.charAt(0).toUpperCase()}</span>
                                             )}
                                           </div>
-                                          <span className="text-xs text-gray-700 truncate">{p.name}</span>
+                                          <span className="text-xs text-foreground truncate">{p.name}</span>
                                         </div>
-                                        <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
+                                        <Checkbox checked={isSelected} className="h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
                                       </div>
                                     );
                                   })}
@@ -916,9 +907,9 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                                   {portfolios.map((p) => {
                                     const isSelected = currentDoc?.pageLinkedPortfolios?.includes(p.id!);
                                     return (
-                                      <div key={p.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer" onClick={() => isSelected ? handleRemovePortfolio(item.id, p.id!) : handleAddPortfolio(item.id, p.id!)}>
-                                        <span className="text-xs text-gray-700 truncate">{p.name}</span>
-                                        <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
+                                      <div key={p.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted cursor-pointer" onClick={() => isSelected ? handleRemovePortfolio(item.id, p.id!) : handleAddPortfolio(item.id, p.id!)}>
+                                        <span className="text-xs text-foreground truncate">{p.name}</span>
+                                        <Checkbox checked={isSelected} className="h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
                                       </div>
                                     );
                                   })}
@@ -930,9 +921,9 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                                   {teams.map((t) => {
                                     const isSelected = currentDoc?.pageLinkedTeams?.includes(t.id!);
                                     return (
-                                      <div key={t.id} className="flex items-center gap-3 py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer" onClick={() => isSelected ? handleRemoveTeam(item.id, t.id!) : handleAddTeam(item.id, t.id!)}>
-                                        <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
-                                        <span className="text-xs text-gray-700 truncate">{t.name}</span>
+                                      <div key={t.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted cursor-pointer" onClick={() => isSelected ? handleRemoveTeam(item.id, t.id!) : handleAddTeam(item.id, t.id!)}>
+                                        <span className="text-xs text-foreground truncate">{t.name}</span>
+                                        <Checkbox checked={isSelected} className="h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
                                       </div>
                                     );
                                   })}
@@ -944,9 +935,9 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                                   {docList.map((d) => {
                                     const isSelected = currentDoc?.pageLinkedDocuments?.includes(d.id);
                                     return (
-                                      <div key={d.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer" onClick={() => isSelected ? handleRemoveDocument(item.id, d.id) : handleAddDocument(item.id, d.id)}>
-                                        <span className="text-xs text-gray-700 truncate">{d.title}</span>
-                                        <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
+                                      <div key={d.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted cursor-pointer" onClick={() => isSelected ? handleRemoveDocument(item.id, d.id) : handleAddDocument(item.id, d.id)}>
+                                        <span className="text-xs text-foreground truncate">{d.title}</span>
+                                        <Checkbox checked={isSelected} className="h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
                                       </div>
                                     );
                                   })}
@@ -975,7 +966,7 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                         handleMenuAction("lock", item.id, item.title);
                       }}
                       onClick={(e) => e.stopPropagation()}
-                      className="ml-auto data-[state=checked]:bg-[#001F3F]"
+                      className="ml-auto data-[state=checked]:bg-primary"
                     />
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -1026,7 +1017,7 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
   };
 
   return (
-    <div className="h-full w-64 flex flex-col bg-[#F9F9F9] border-r border-gray-200">
+    <div className="h-full w-64 flex flex-col bg-background border-r border-border">
       {/* Header */}
       {/* <div className="flex items-center justify-between p-2 border-b border-gray-50 flex-shrink-0 bg-white shadow-sm">
         {isEditingRootTitle ? (
@@ -1062,7 +1053,7 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
       </div> */}
 
       {/* Sidebar Header with Root Title */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 flex-shrink-0 bg-white">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0 bg-background">
         <div className="flex items-center gap-2 overflow-hidden flex-1">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -1092,7 +1083,7 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
                 )}
               </div> */}
               <div className="flex items-center gap-2 p-1">
-                <span className="text-sm font-semibold text-[#1C1C1E]">Pages</span>
+                <span className="text-sm font-semibold text-foreground">Pages</span>
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-56">
@@ -1143,7 +1134,7 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
             variant="ghost"
             size="icon"
             onClick={onCollapse}
-            className="h-8 w-8 text-[#8E8E93] hover:bg-gray-100"
+            className="h-8 w-8 text-muted-foreground hover:bg-muted"
             title="Collapse sidebar"
           >
             <PanelLeftClose className="w-4 h-4" />
@@ -1160,7 +1151,7 @@ export function DocsSidebar({ onCollapse, onExpandAll, onCollapseAll }: DocsClic
           <Button
             variant="ghost"
             onClick={addNewPage}
-            className="w-full justify-start gap-2 px-4 py-2.5 mt-2 text-sm text-[#8E8E93] hover:bg-gray-50 font-medium h-auto relative before:absolute before:top-0 before:left-4 before:right-4 before:h-px before:bg-gradient-to-r before:from-transparent before:via-gray-200 before:to-transparent"
+            className="w-full justify-start gap-2 px-4 py-2.5 mt-2 text-sm text-muted-foreground hover:bg-muted font-medium h-auto relative before:absolute before:top-0 before:left-4 before:right-4 before:h-px before:bg-gradient-to-r before:from-transparent before:via-border before:to-transparent"
           >
             <Plus className="w-4 h-4" />
             <span>Add page</span>

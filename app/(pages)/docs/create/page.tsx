@@ -188,19 +188,19 @@ export default function DocsCreatePage() {
 
     return (
         <div className="space-y-6">
-            <div className="border-b">
+            <div className="border-b border-border">
                 <Breadcrumbs />
             </div>
 
             {/* Content with padding on both sides */}
-            <div className="px-7 space-y-6 ">
+            <div className="px-7 space-y-6">
 
                 {/* Document Name and Identifier Section */}
-                <div className="bg-[#F2F2F7] p-4 rounded-md ">
+                <div className="bg-muted/50 dark:bg-card/30 p-4 rounded-md">
                     <div className="flex gap-6">
                         {/* Document Name */}
                         <div className="w-80">
-                            <label className="block text-xs font-medium text-[#8E8E93] mb-2">
+                            <label className="block text-xs font-medium text-muted-foreground mb-2">
                                 Document name
                             </label>
                             <Input
@@ -208,13 +208,13 @@ export default function DocsCreatePage() {
                                 value={documentName}
                                 onChange={handleDocumentNameChange}
                                 placeholder="e.g. West Bengal"
-                                className="h-10 bg-white"
+                                className="h-10 bg-background dark:bg-card text-foreground"
                             />
                         </div>
 
                         {/* Document Identifier */}
                         <div className="w-80">
-                            <label className="block text-xs font-medium text-[#8E8E93] mb-2">
+                            <label className="block text-xs font-medium text-muted-foreground mb-2">
                                 Document identifier
                             </label>
                             <Input
@@ -222,19 +222,19 @@ export default function DocsCreatePage() {
                                 value={documentIdentifier}
                                 onChange={(e) => setDocumentIdentifier(e.target.value)}
                                 placeholder="e.g. WES"
-                                className="h-10 bg-white"
+                                className="h-10 bg-background dark:bg-card text-foreground"
                             />
                         </div>
                     </div>
                 </div>
 
                 {/* Labels Section */}
-                <div className="border border-gray-200 border-l-4 border-l-black rounded-lg p-5 bg-white">
+                <div className="border border-border border-l-4 border-l-primary rounded-lg p-5 bg-card">
                     <div className="flex items-start justify-between gap-6">
                         {/* Left Side - Text Content */}
                         <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 mb-2 text-sm">Labels</h3>
-                            <p className="text-xs text-gray-600">
+                            <h3 className="font-semibold text-foreground mb-2 text-sm">Labels</h3>
+                            <p className="text-xs text-muted-foreground">
                                 Create and manage labels to categorize and organize documents, making it easier for your team to filter and track work.
                             </p>
                         </div>
@@ -246,49 +246,25 @@ export default function DocsCreatePage() {
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        className="w-full h-10 justify-between bg-white"
+                                        className="w-full h-10 justify-between bg-background dark:bg-card text-foreground"
                                     >
-                                        <span className="text-sm text-gray-700">Select</span>
-                                        <ChevronDown className="w-4 h-4 text-gray-500" />
+                                        <span className="text-sm text-foreground">Select</span>
+                                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                {/* <DropdownMenuContent className="w-80">
-                                    <div
-                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                        onClick={() => setSelectedType("portfolio")}
-                                    >
-                                        Portfolio
-                                    </div>
-                                    <div
-                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                        onClick={() => setSelectedType("project")}
-                                    >
-                                        Project
-                                    </div>
-                                    <div
-                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                        onClick={() => setSelectedType("team")}
-                                    >
-                                        Team
-                                    </div>
-                                </DropdownMenuContent> */}
                             </DropdownMenu>
                         </div>
-
-
-
-
 
                     </div>
                 </div>
 
 
                 {/* Link Document Section */}
-                <div className="border border-gray-200 border-l-4 border-l-black rounded-lg p-5 bg-white">
+                <div className="border border-border border-l-4 border-l-primary rounded-lg p-5 bg-card">
                     <div className="flex items-start justify-between gap-6">
                         <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 mb-2 text-sm">Link this document to</h3>
-                            <p className="text-xs text-gray-600">
+                            <h3 className="font-semibold text-foreground mb-2 text-sm">Link this document to</h3>
+                            <p className="text-xs text-muted-foreground">
                                 Link this document to a Portfolio, Project, or Team to ensure it's organized, discoverable, and accessible in the right workspace.
                             </p>
                         </div>
@@ -298,37 +274,28 @@ export default function DocsCreatePage() {
                                 <DropdownMenuTrigger asChild>
                                     <Button
                                         variant="outline"
-                                        className="w-full h-10 justify-start bg-white text-[#001F3F] hover:text-[#001F3F]/90 hover:bg-gray-100"
+                                        className="w-full h-10 justify-start bg-background dark:bg-card text-primary hover:text-primary/90 hover:bg-muted"
                                     >
                                         <Plus className="w-4 h-4 mr-2" />
                                         Link this doc
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-80 p-0">
-                                    <div className="flex border-b border-gray-200 px-1 pt-1">
+                                <DropdownMenuContent className="w-80 p-0 bg-popover border border-border text-popover-foreground shadow-lg rounded-md">
+                                    <div className="flex border-b border-border px-1 pt-1">
                                         <button
                                             onClick={() => setActiveTab("project")}
                                             className={`px-2 py-2 text-sm font-medium transition-colors ${activeTab === "project"
-                                                ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                                : "text-gray-500 hover:text-gray-700"
+                                                ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                                : "text-muted-foreground hover:text-foreground"
                                                 }`}
                                         >
                                             Project
                                         </button>
-                                        {/* <button
-                                            onClick={() => setActiveTab("team")}
-                                            className={`px-2 py-2 text-sm font-medium transition-colors ${activeTab === "team"
-                                                ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                                : "text-gray-500 hover:text-gray-700"
-                                                }`}
-                                        >
-                                            Teams
-                                        </button> */}
                                         <button
                                             onClick={() => setActiveTab("portfolio")}
                                             className={`px-2 py-2 text-sm font-medium transition-colors ${activeTab === "portfolio"
-                                                ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                                : "text-gray-500 hover:text-gray-700"
+                                                ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                                : "text-muted-foreground hover:text-foreground"
                                                 }`}
                                         >
                                             Portfolio
@@ -337,8 +304,8 @@ export default function DocsCreatePage() {
                                         <button
                                             onClick={() => setActiveTab("document")}
                                             className={`px-2 py-2 text-sm font-medium transition-colors ${activeTab === "document"
-                                                ? "text-gray-900 border-b-2 border-black -mb-[2px]"
-                                                : "text-gray-500 hover:text-gray-700"
+                                                ? "text-foreground border-b-2 border-primary -mb-[2px]"
+                                                : "text-muted-foreground hover:text-foreground"
                                                 }`}
                                         >
                                             Documents
@@ -346,7 +313,7 @@ export default function DocsCreatePage() {
 
                                     </div>
 
-                                    <div className="p-2">
+                                    <div className="p-2 bg-popover text-popover-foreground">
                                         {/* Empty State Image Logic */}
                                         {(() => {
                                             const isEmpty = (activeTab === "project" && projects.length === 0) ||
@@ -380,16 +347,16 @@ export default function DocsCreatePage() {
                                             };
 
                                             return (
-                                                <div className="py-8 flex flex-col items-center justify-center text-center px-4">
+                                                <div className="py-8 flex flex-col items-center justify-center text-center px-4 bg-popover text-popover-foreground">
                                                     <img
                                                         src={config[activeTab].image}
                                                         alt={config[activeTab].title}
-                                                        className="w-60 h-32 mb-4 opacity-80"
+                                                        className="w-60 h-32 mb-4 opacity-80 dark:brightness-90 dark:contrast-125"
                                                     />
-                                                    <h3 className="text-lg font-semibold text-gray-900 mb-1 leading-tight">
+                                                    <h3 className="text-lg font-semibold text-foreground mb-1 leading-tight">
                                                         {config[activeTab].title}
                                                     </h3>
-                                                    <p className="text-xs text-gray-500 leading-normal max-w-[240px]">
+                                                    <p className="text-xs text-muted-foreground leading-normal max-w-[240px]">
                                                         {config[activeTab].desc}
                                                     </p>
                                                 </div>
@@ -397,16 +364,16 @@ export default function DocsCreatePage() {
                                         })()}
 
                                         {activeTab === "project" && projects.length > 0 && (
-                                            <div>
-                                                <p className="text-xs text-gray-500 mb-3">Recent Projects</p>
-                                                <div className=" max-h-60 overflow-y-auto">
+                                            <div className="bg-popover text-popover-foreground">
+                                                <p className="text-xs text-muted-foreground mb-3">Recent Projects</p>
+                                                <div className="max-h-60 overflow-y-auto">
                                                     {projects.map((project) => {
                                                         const isSelected = selectedProjects.includes(project.id!);
 
                                                         return (
                                                             <div
                                                                 key={project.id}
-                                                                className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                                                className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                                                     }`}
                                                                 onClick={() => {
                                                                     if (isSelected) {
@@ -426,10 +393,10 @@ export default function DocsCreatePage() {
                                                                         }
                                                                     }}
                                                                     onClick={(e) => e.stopPropagation()}
-                                                                    className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                                                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                                 />
 
-                                                                <span className="text-sm text-gray-900 flex-1">
+                                                                <span className="text-sm text-foreground flex-1">
                                                                     {project.name}
                                                                 </span>
                                                             </div>
@@ -440,8 +407,8 @@ export default function DocsCreatePage() {
                                         )}
 
                                         {activeTab === "team" && teams.length > 0 && (
-                                            <div>
-                                                <p className="text-xs text-gray-500 mb-3">Recent Teams</p>
+                                            <div className="bg-popover text-popover-foreground">
+                                                <p className="text-xs text-muted-foreground mb-3">Recent Teams</p>
                                                 <div className="space-y-1 max-h-60 overflow-y-auto">
                                                     {teams.map((team) => {
                                                         const isSelected = selectedTeams.includes(team.id!);
@@ -449,7 +416,7 @@ export default function DocsCreatePage() {
                                                         return (
                                                             <div
                                                                 key={team.id}
-                                                                className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                                                className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                                                     }`}
                                                                 onClick={() => {
                                                                     if (isSelected) {
@@ -469,10 +436,10 @@ export default function DocsCreatePage() {
                                                                         }
                                                                     }}
                                                                     onClick={(e) => e.stopPropagation()}
-                                                                    className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                                                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                                 />
 
-                                                                <span className="text-sm text-gray-900 flex-1">
+                                                                <span className="text-sm text-foreground flex-1">
                                                                     {team.name}
                                                                 </span>
                                                             </div>
@@ -483,8 +450,8 @@ export default function DocsCreatePage() {
                                         )}
 
                                         {activeTab === "document" && docList.length > 0 && (
-                                            <div>
-                                                <p className="text-xs text-gray-500 mb-3">Recent Documents</p>
+                                            <div className="bg-popover text-popover-foreground">
+                                                <p className="text-xs text-muted-foreground mb-3">Recent Documents</p>
                                                 <div className="space-y-1 max-h-60 overflow-y-auto">
                                                     {docList.map((doc) => {
                                                         const isSelected = selectedDocs.includes(doc.id);
@@ -492,7 +459,7 @@ export default function DocsCreatePage() {
                                                         return (
                                                             <div
                                                                 key={doc.id}
-                                                                className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                                                className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                                                     }`}
                                                                 onClick={() => {
                                                                     if (isSelected) {
@@ -512,10 +479,10 @@ export default function DocsCreatePage() {
                                                                         }
                                                                     }}
                                                                     onClick={(e) => e.stopPropagation()}
-                                                                    className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                                                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                                 />
 
-                                                                <span className="text-sm text-gray-900 flex-1">
+                                                                <span className="text-sm text-foreground flex-1">
                                                                     {doc.title}
                                                                 </span>
                                                             </div>
@@ -526,8 +493,8 @@ export default function DocsCreatePage() {
                                         )}
 
                                         {activeTab === "portfolio" && portfolios.length > 0 && (
-                                            <div>
-                                                <p className="text-xs text-gray-500 mb-3">Recent Portfolios</p>
+                                            <div className="bg-popover text-popover-foreground">
+                                                <p className="text-xs text-muted-foreground mb-3">Recent Portfolios</p>
                                                 <div className="space-y-1 max-h-60 overflow-y-auto">
                                                     {portfolios.map((p) => {
                                                         const isSelected = selectedPortfolios.includes(p.id);
@@ -535,7 +502,7 @@ export default function DocsCreatePage() {
                                                         return (
                                                             <div
                                                                 key={p.id}
-                                                                className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                                                                className={`flex items-center gap-3 py-2 px-2 rounded cursor-pointer transition-colors ${isSelected ? "bg-muted" : "hover:bg-muted/50"
                                                                     }`}
                                                                 onClick={() => {
                                                                     if (isSelected) {
@@ -555,10 +522,10 @@ export default function DocsCreatePage() {
                                                                         }
                                                                     }}
                                                                     onClick={(e) => e.stopPropagation()}
-                                                                    className="data-[state=checked]:bg-[#001F3F] data-[state=checked]:border-[#001F3F]"
+                                                                    className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                                 />
 
-                                                                <span className="text-sm text-gray-900 flex-1">
+                                                                <span className="text-sm text-foreground flex-1">
                                                                     {p.name}
                                                                 </span>
                                                             </div>
@@ -587,7 +554,7 @@ export default function DocsCreatePage() {
                                     return (
                                         <div
                                             key={project.id}
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-gray-700"
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-foreground bg-muted"
                                             style={{ backgroundColor: `${bgColor}20` }}
                                         >
                                             <span>{project.name}</span>
@@ -597,9 +564,9 @@ export default function DocsCreatePage() {
                                                     e.stopPropagation();
                                                     handleRemoveProject(project.id!);
                                                 }}
-                                                className="hover:bg-black/10 rounded p-0.5 transition-colors"
+                                                className="hover:bg-foreground/10 rounded p-0.5 transition-colors"
                                             >
-                                                <X className="w-3.5 h-3.5 text-gray-600" />
+                                                <X className="w-3.5 h-3.5 text-muted-foreground" />
                                             </button>
                                         </div>
                                     );
@@ -622,7 +589,7 @@ export default function DocsCreatePage() {
                                     return (
                                         <div
                                             key={team.id}
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-gray-700"
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-foreground bg-muted"
                                             style={{ backgroundColor: `${bgColor}20` }}
                                         >
                                             <span>{team.name}</span>
@@ -632,9 +599,9 @@ export default function DocsCreatePage() {
                                                     e.stopPropagation();
                                                     handleRemoveTeam(team.id!);
                                                 }}
-                                                className="hover:bg-black/10 rounded p-0.5 transition-colors"
+                                                className="hover:bg-foreground/10 rounded p-0.5 transition-colors"
                                             >
-                                                <X className="w-3.5 h-3.5 text-gray-600" />
+                                                <X className="w-3.5 h-3.5 text-muted-foreground" />
                                             </button>
                                         </div>
                                     );
@@ -655,7 +622,7 @@ export default function DocsCreatePage() {
                                     return (
                                         <div
                                             key={doc.id}
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-gray-700"
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-foreground bg-muted"
                                             style={{ backgroundColor: `${bgColor}20` }}
                                         >
                                             <span>{doc.title}</span>
@@ -665,9 +632,9 @@ export default function DocsCreatePage() {
                                                     e.stopPropagation();
                                                     handleRemoveDocumentLink(doc.id);
                                                 }}
-                                                className="hover:bg-black/10 rounded p-0.5 transition-colors"
+                                                className="hover:bg-foreground/10 rounded p-0.5 transition-colors"
                                             >
-                                                <X className="w-3.5 h-3.5 text-gray-600" />
+                                                <X className="w-3.5 h-3.5 text-muted-foreground" />
                                             </button>
                                         </div>
                                     );
@@ -689,7 +656,7 @@ export default function DocsCreatePage() {
                                     return (
                                         <div
                                             key={p.id}
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-gray-700"
+                                            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium text-foreground bg-muted"
                                             style={{ backgroundColor: `${bgColor}20` }}
                                         >
                                             <span>{p.name}</span>
@@ -699,9 +666,9 @@ export default function DocsCreatePage() {
                                                     e.stopPropagation();
                                                     handleRemovePortfolio(p.id);
                                                 }}
-                                                className="hover:bg-black/10 rounded p-0.5 transition-colors"
+                                                className="hover:bg-foreground/10 rounded p-0.5 transition-colors"
                                             >
-                                                <X className="w-3.5 h-3.5 text-gray-600" />
+                                                <X className="w-3.5 h-3.5 text-muted-foreground" />
                                             </button>
                                         </div>
                                     );
@@ -714,12 +681,12 @@ export default function DocsCreatePage() {
 
 
                 {/* Document Privacy Section */}
-                <div className="border border-gray-200 border-l-4 border-l-black rounded-lg p-5 bg-[#F2F2F7]">
+                <div className="border border-border border-l-4 border-l-primary rounded-lg p-5 bg-muted/50 dark:bg-card/30">
                     <div className="flex items-start justify-between gap-6">
                         {/* Left Side - Text Content */}
                         <div className="flex-1">
-                            <h3 className="font-semibold text-gray-900 mb-2 text-sm">Document privacy</h3>
-                            <p className="text-xs text-gray-600 mb-4">
+                            <h3 className="font-semibold text-foreground mb-2 text-sm">Document privacy</h3>
+                            <p className="text-xs text-muted-foreground mb-4">
                                 This document's visibility is managed automatically. If it isn't linked to anything, it follows workspace-level access. Once linked, only members of the selected Portfolio, Project, or Team will have access.
                             </p>
                         </div>
@@ -727,21 +694,19 @@ export default function DocsCreatePage() {
                         {/* Right Side - User Info */}
                         <div className="w-80">
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-10 w-10">
-                                            <AvatarImage src={user?.profilePictureUrl || ""} alt={user?.name || "User"} />
-                                            <AvatarFallback className="bg-[#FF6B35] text-white text-sm">
-                                                {user?.name?.charAt(0)?.toUpperCase() || "R"}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-medium text-sm text-gray-900">{user?.name || "Rahul Mondal"}</p>
-                                            <p className="text-xs text-gray-500">{user?.email || "name@email.com"}</p>
-                                        </div>
+                                <div className="flex items-center gap-3">
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarImage src={user?.profilePictureUrl || ""} alt={user?.name || "User"} />
+                                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+                                            {user?.name?.charAt(0)?.toUpperCase() || "R"}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className="font-medium text-sm text-foreground">{user?.name || "Rahul Mondal"}</p>
+                                        <p className="text-xs text-muted-foreground">{user?.email || "name@email.com"}</p>
                                     </div>
                                 </div>
-                                <span className="text-xs text-gray-500 font-medium">Admin</span>
+                                <span className="text-xs text-muted-foreground font-medium">Admin</span>
 
                             </div>
                         </div>
@@ -750,7 +715,7 @@ export default function DocsCreatePage() {
             </div>
 
             {/* Action Buttons - FULL WIDTH */}
-            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 px-12">
+            <div className="flex justify-end gap-3 pt-4 border-t border-border px-12">
                 <Button
                     variant="outline"
                     onClick={handleCancel}
@@ -761,7 +726,7 @@ export default function DocsCreatePage() {
                 <Button
                     onClick={handleCreateDocument}
                     disabled={!isFormValid() || isSubmitting}
-                    className="bg-[#001F3F] hover:bg-[#001F3F]/90 text-white disabled:bg-gray-300 disabled:cursor-not-allowed h-10 flex items-center justify-center gap-2"
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed h-10 flex items-center justify-center gap-2"
                 >
                     {isSubmitting ? (
                         <>

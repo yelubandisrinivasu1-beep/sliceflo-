@@ -561,10 +561,10 @@ export default function DocsLayout({
         <div className="flex items-center gap-2">
 
           {/* Title with icon */}
-          <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors">
+          <div className="flex items-center gap-2 cursor-pointer hover:bg-muted p-1 rounded transition-colors">
             <img
               src="/images/DocsIcon.svg"
-              className="w-5 h-5 flex-shrink-0"
+              className="w-5 h-5 flex-shrink-0 dark:brightness-0 dark:invert"
               style={{ filter: "brightness(0.3)" }}
               alt="Docs"
             />
@@ -576,12 +576,12 @@ export default function DocsLayout({
                 onChange={(e) => setTitleValue(e.target.value)}
                 onBlur={saveTitleEdit}
                 onKeyDown={handleTitleKeyDown}
-                className="text-sm font-semibold h-7 px-2 py-1 focus-visible:ring-0 border-none bg-transparent shadow-none"
+                className="text-sm font-semibold h-7 px-2 py-1 focus-visible:ring-0 border-none bg-transparent shadow-none text-foreground"
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
               <span
-                className="text-sm font-semibold text-[#1C1C1E] truncate min-w-[20px]"
+                className="text-sm font-semibold text-foreground truncate min-w-[20px]"
                 onDoubleClick={startEditingTitle}
               >
                 {rootDoc?.title || ""}
@@ -600,13 +600,13 @@ export default function DocsLayout({
               <DropdownMenu open={showBadgeDropdown} onOpenChange={setShowBadgeDropdown}>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className="flex items-center bg-[#fdf2e9] text-[#F68C1F] border border-[#F68C1F] min-w-[1.125rem] h-[1.125rem] px-1 rounded-sm text-[10px] font-bold justify-center hover:bg-[#fef5ed] transition-colors cursor-pointer"
+                    className="flex items-center bg-orange-500/10 dark:bg-orange-500/20 text-[#F68C1F] dark:text-orange-400 border border-[#F68C1F]/30 dark:border-orange-500/50 min-w-[1.125rem] h-[1.125rem] px-1 rounded-sm text-[10px] font-bold justify-center hover:bg-orange-500/20 transition-colors cursor-pointer"
                     title="View linked items"
                   >
                     {totalLinks}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-80 p-0">
+                <DropdownMenuContent align="start" className="w-80 p-0 bg-popover border border-border text-popover-foreground shadow-lg rounded-md">
                   {(() => {
                     const doc = rootDoc;
                     const linkedProjectsList = doc?.linkedProjects?.map(id => projects.find(p => p.id === id)).filter(Boolean) || [];
@@ -618,16 +618,16 @@ export default function DocsLayout({
                     if (hasLinks && !showLinkTabs) return (
                       <div className="p-2 space-y-1">
                         <div className="flex items-center justify-between px-2 py-1 mb-1">
-                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-tight">Linked Items</span>
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">Linked Items</span>
                           <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(true); }}>
-                            <Plus className="w-4 h-4 text-gray-500" />
+                            <Plus className="w-4 h-4 text-muted-foreground" />
                           </Button>
                         </div>
-                        <div className="space-y-1 bg-gray-50 rounded-lg p-1.5">
+                        <div className="space-y-1 bg-muted/50 rounded-lg p-1.5">
                           {linkedProjectsList.map((p: any) => {
                             const avatar = getProjectAvatar(p);
                             return (
-                              <div key={p?.id} className="flex items-center gap-2 py-1 px-2 bg-white rounded shadow-sm group">
+                              <div key={p?.id} className="flex items-center gap-2 py-1 px-2 bg-card border border-border rounded shadow-sm group">
                                 {/* Project Icon */}
                                 <div
                                   className="w-5 h-5 rounded shrink-0 flex items-center justify-center overflow-hidden"
@@ -648,47 +648,47 @@ export default function DocsLayout({
                                     <span className="text-[9px] font-bold" style={{ color: p?.color ?? "#3B82F6" }}>{p?.name?.charAt(0).toUpperCase()}</span>
                                   )}
                                 </div>
-                                <span className="text-xs text-gray-700 flex-1 truncate">{p?.name}</span>
+                                <span className="text-xs text-foreground flex-1 truncate">{p?.name}</span>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100"
                                   onClick={(e) => { e.stopPropagation(); handleRemoveProject(p?.id!); }}
                                 >
-                                  <X className="w-3 h-3" />
+                                  <X className="w-3 h-3 text-muted-foreground" />
                                 </Button>
                               </div>
                             );
                           })}
                           {/* {linkedTeamsList.map((t: any) => (
-                            <div key={t?.id} className="flex items-center gap-2 py-1 px-2 bg-white rounded shadow-sm group">
+                            <div key={t?.id} className="flex items-center gap-2 py-1 px-2 bg-card border border-border rounded shadow-sm group">
                               <span className="text-sm">👥</span>
-                              <span className="text-xs text-gray-700 flex-1 truncate">{t?.name}</span>
+                              <span className="text-xs text-foreground flex-1 truncate">{t?.name}</span>
                               <Button variant="ghost" size="sm" className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); handleRemoveTeam(t?.id!); }}>
-                                <X className="w-3 h-3" />
+                                <X className="w-3 h-3 text-muted-foreground" />
                               </Button>
                             </div>
                           ))} */}
                           {linkedPortfoliosList.map((p: any) => (
-                            <div key={p?.id} className="flex items-center gap-2 py-1 px-2 bg-white rounded shadow-sm group">
+                            <div key={p?.id} className="flex items-center gap-2 py-1 px-2 bg-card border border-border rounded shadow-sm group">
                               <span className="text-sm">💼</span>
-                              <span className="text-xs text-gray-700 flex-1 truncate">{p?.name}</span>
+                              <span className="text-xs text-foreground flex-1 truncate">{p?.name}</span>
                               <Button variant="ghost" size="sm" className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); handleRemovePortfolio(p?.id!); }}>
-                                <X className="w-3 h-3" />
+                                <X className="w-3 h-3 text-muted-foreground" />
                               </Button>
                             </div>
                           ))}
                           {linkedDocumentsList.map((d: any) => (
-                            <div key={d?.id} className="flex items-center gap-2 py-1 px-2 bg-white rounded shadow-sm group">
+                            <div key={d?.id} className="flex items-center gap-2 py-1 px-2 bg-card border border-border rounded shadow-sm group">
                               <span className="text-sm">📄</span>
-                              <span className="text-xs text-gray-700 flex-1 truncate">{d?.title}</span>
+                              <span className="text-xs text-foreground flex-1 truncate">{d?.title}</span>
                               <Button variant="ghost" size="sm" className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); handleRemoveDocument(d?.id); }}>
-                                <X className="w-3 h-3" />
+                                <X className="w-3 h-3 text-muted-foreground" />
                               </Button>
                             </div>
                           ))}
                         </div>
-                        <Button variant="ghost" className="flex items-center justify-start gap-2 py-1 px-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded w-full text-left h-auto font-normal" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(true); }}>
+                        <Button variant="ghost" className="flex items-center justify-start gap-2 py-1 px-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded w-full text-left h-auto font-normal" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(true); }}>
                           <Plus className="w-3 h-3" />
                           <span className="text-xs">Add Linked Items</span>
                         </Button>
@@ -698,15 +698,15 @@ export default function DocsLayout({
                     // Tabs view
                     return (
                       <div>
-                        <div className="flex border-b border-gray-200 px-1 pt-1">
+                        <div className="flex border-b border-border px-1 pt-1">
                           {["project", "portfolio", "document"].map((tab) => (
                             <Button key={tab} variant="ghost" onClick={() => setActiveTab(tab as any)}
-                              className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === tab ? "text-gray-900 border-b-2 border-black -mb-0.5" : "text-gray-500 hover:text-gray-700"}`}>
+                              className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === tab ? "text-foreground border-b-2 border-primary -mb-0.5" : "text-muted-foreground hover:text-foreground"}`}>
                               {tab.charAt(0).toUpperCase() + tab.slice(1)}
                             </Button>
                           ))}
                           {hasLinks && (
-                            <Button variant="ghost" size="sm" className="ml-auto h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(false); }}>
+                            <Button variant="ghost" size="sm" className="ml-auto h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(false); }}>
                               <ChevronLeft className="w-3.5 h-3.5" />
                             </Button>
                           )}
@@ -725,8 +725,8 @@ export default function DocsLayout({
                             if (!current.list || current.list.length === 0) {
                               return (
                                 <div className="flex flex-col items-center justify-center py-8 px-4 text-center">
-                                  <img src={current.image} alt={current.title} className="w-16 h-16 mb-3 object-contain opacity-50" />
-                                  <p className="text-xs text-gray-400 font-medium">{current.title}</p>
+                                  <img src={current.image} alt={current.title} className="w-16 h-16 mb-3 object-contain opacity-50 dark:brightness-90 dark:contrast-125" />
+                                  <p className="text-xs text-muted-foreground font-medium">{current.title}</p>
                                 </div>
                               );
                             }
@@ -739,7 +739,7 @@ export default function DocsLayout({
                                   return (
                                     <div
                                       key={p.id}
-                                      className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer"
+                                      className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted cursor-pointer"
                                       onClick={() => isSelected ? handleRemoveProject(p.id!) : handleAddProject(p.id!)}
                                     >
                                       <div className="flex items-center gap-2 min-w-0">
@@ -763,36 +763,36 @@ export default function DocsLayout({
                                             <span className="text-[10px] font-bold" style={{ color: p.color ?? "#3B82F6" }}>{p.name?.charAt(0).toUpperCase()}</span>
                                           )}
                                         </div>
-                                        <span className="text-xs text-gray-700 truncate">{p.name}</span>
+                                        <span className="text-xs text-foreground truncate">{p.name}</span>
                                       </div>
-                                      <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
+                                      <Checkbox checked={isSelected} className="h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
                                     </div>
                                   );
                                 })}
                                 {activeTab === "team" && teams.map(t => {
                                   const isSelected = doc?.linkedTeams?.includes(t.id!);
                                   return (
-                                    <div key={t.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer" onClick={() => isSelected ? handleRemoveTeam(t.id!) : handleAddTeam(t.id!)}>
-                                      <span className="text-xs text-gray-700 truncate">{t.name}</span>
-                                      <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
+                                    <div key={t.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted cursor-pointer" onClick={() => isSelected ? handleRemoveTeam(t.id!) : handleAddTeam(t.id!)}>
+                                      <span className="text-xs text-foreground truncate">{t.name}</span>
+                                      <Checkbox checked={isSelected} className="h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
                                     </div>
                                   );
                                 })}
                                 {activeTab === "portfolio" && portfolios.map(p => {
                                   const isSelected = doc?.linkedPortfolios?.includes(p.id);
                                   return (
-                                    <div key={p.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer" onClick={() => isSelected ? handleRemovePortfolio(p.id) : handleAddPortfolio(p.id)}>
-                                      <span className="text-xs text-gray-700 truncate">{p.name}</span>
-                                      <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
+                                    <div key={p.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted cursor-pointer" onClick={() => isSelected ? handleRemovePortfolio(p.id) : handleAddPortfolio(p.id)}>
+                                      <span className="text-xs text-foreground truncate">{p.name}</span>
+                                      <Checkbox checked={isSelected} className="h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
                                     </div>
                                   );
                                 })}
                                 {activeTab === "document" && docList.map(d => {
                                   const isSelected = doc?.linkedDocuments?.includes(d.id);
                                   return (
-                                    <div key={d.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-gray-50 cursor-pointer" onClick={() => isSelected ? handleRemoveDocument(d.id) : handleAddDocument(d.id)}>
-                                      <span className="text-xs text-gray-700 truncate">{d.title}</span>
-                                      <Checkbox checked={isSelected} className="h-3.5 w-3.5" />
+                                    <div key={d.id} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted cursor-pointer" onClick={() => isSelected ? handleRemoveDocument(d.id) : handleAddDocument(d.id)}>
+                                      <span className="text-xs text-foreground truncate">{d.title}</span>
+                                      <Checkbox checked={isSelected} className="h-3.5 w-3.5 data-[state=checked]:bg-primary data-[state=checked]:border-primary" />
                                     </div>
                                   );
                                 })}
@@ -812,21 +812,21 @@ export default function DocsLayout({
               variant="ghost"
               size="icon"
               onClick={() => collapseAllFn?.()}
-              className="h-6 w-6 text-[#8E8E93] hover:bg-gray-100 p-1"
+              className="h-6 w-6 text-muted-foreground hover:bg-muted p-1"
               title="Collapse all"
               disabled={!collapseAllFn}
             >
-              <img src="/images/docsChevronUp.svg" className="w-3 h-3" alt="Collapse all" />
+              <img src="/images/docsChevronUp.svg" className="w-3 h-3 dark:brightness-200 dark:contrast-200" alt="Collapse all" />
             </Button>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => expandAllFn?.()}
-              className="h-6 w-6 text-[#8E8E93] hover:bg-gray-100 p-1"
+              className="h-6 w-6 text-muted-foreground hover:bg-muted p-1"
               title="Expand all"
               disabled={!expandAllFn}
             >
-              <img src="/images/docsChevronDown.svg" className="w-3 h-3" alt="Expand all" />
+              <img src="/images/docsChevronDown.svg" className="w-3 h-3 dark:brightness-200 dark:contrast-200" alt="Expand all" />
             </Button>
           </div>
 
@@ -839,11 +839,11 @@ export default function DocsLayout({
           <Button
             variant="ghost"
             size="icon"
-            className="p-3"
+            className="p-3 text-muted-foreground hover:text-foreground hover:bg-muted"
             title="Open in new window"
             onClick={() => window.open(`/docs/${id}`, "_blank")}
           >
-            <SquareArrowOutUpRight className="w-4 h-4 text-gray-600" />
+            <SquareArrowOutUpRight className="w-4 h-4" />
           </Button>
 
           {/* Fullscreen Icon */}
@@ -851,10 +851,10 @@ export default function DocsLayout({
             variant="ghost"
             size="icon"
             onClick={toggleFullscreen}
-            className="p-3"
+            className="p-3 text-muted-foreground hover:text-foreground hover:bg-muted"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
           >
-            <Expand className="w-4 h-4 text-gray-600" />
+            <Expand className="w-4 h-4" />
           </Button>
 
           {/* More Options Dropdown (3 dots) */}
@@ -863,15 +863,15 @@ export default function DocsLayout({
               <Button
                 variant="ghost"
                 size="icon"
-                className="p-3"
+                className="p-3 text-muted-foreground hover:text-foreground hover:bg-muted"
                 title="More options"
               >
-                <MoreHorizontal className="w-4 h-4 text-gray-600" />
+                <MoreHorizontal className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuContent align="end" className="w-64 bg-popover border border-border text-popover-foreground shadow-lg rounded-md">
               {/* Header */}
-              <DropdownMenuLabel className="text-xs font-semibold text-white text-center mx-1 mt-1 mb-2 px-8 py-2 rounded-lg bg-[#001F3F]">
+              <DropdownMenuLabel className="text-xs font-semibold text-primary-foreground text-center mx-1 mt-1 mb-2 px-8 py-2 rounded-lg bg-primary">
                 Sharing & Permissions
               </DropdownMenuLabel>
 
@@ -913,7 +913,7 @@ export default function DocsLayout({
                   <Link className="w-4 h-4 mr-2" />
                   <span>Link Document to</span>
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="w-80 p-0">
+                <DropdownMenuSubContent className="w-80 p-0 bg-popover border border-border text-popover-foreground shadow-lg rounded-md">
                   {(() => {
                     const doc = rootDoc;
                     const linkedProjectsList = doc?.linkedProjects?.map(id => projects.find(p => p.id === id)).filter(Boolean) || [];
@@ -927,16 +927,16 @@ export default function DocsLayout({
                       return (
                         <div className="p-2 space-y-1">
                           <div className="flex items-center justify-between px-2 py-1 mb-1">
-                            <span className="text-xs font-semibold text-gray-500 uppercase tracking-tight">Linked Items</span>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(true); }}>
-                              <Plus className="w-4 h-4 text-gray-500" />
+                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-tight">Linked Items</span>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(true); }}>
+                              <Plus className="w-4 h-4" />
                             </Button>
                           </div>
-                          <div className="space-y-1 bg-gray-50 rounded-lg p-1.5">
+                          <div className="space-y-1 bg-muted/50 rounded-lg p-1.5">
                             {linkedProjectsList.map((p: any) => {
                               const avatar = getProjectAvatar(p);
                               return (
-                                <div key={p?.id} className="flex items-center gap-2 py-1 px-2 bg-white rounded shadow-sm group">
+                                <div key={p?.id} className="flex items-center gap-2 py-1 px-2 bg-card border border-border rounded shadow-sm group">
                                   {/* Project Icon */}
                                   <div
                                     className="w-5 h-5 rounded shrink-0 flex items-center justify-center overflow-hidden"
@@ -961,48 +961,48 @@ export default function DocsLayout({
                                       <span className="text-[9px] font-bold" style={{ color: p?.color ?? "#3B82F6" }}>{p?.name?.charAt(0).toUpperCase()}</span>
                                     )}
                                   </div>
-                                  <span className="text-xs text-gray-700 flex-1 truncate">{p?.name}</span>
+                                  <span className="text-xs text-foreground flex-1 truncate">{p?.name}</span>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100"
                                     onClick={(e) => { e.stopPropagation(); handleRemoveProject(p?.id!); }}
                                   >
-                                    <X className="w-3 h-3" />
+                                    <X className="w-3 h-3 text-muted-foreground" />
                                   </Button>
                                 </div>
                               );
                             })}
                             {/* {linkedTeamsList.map(t => (
-                              <div key={t?.id} className="flex items-center gap-2 py-1 px-2 bg-white rounded shadow-sm group">
+                              <div key={t?.id} className="flex items-center gap-2 py-1 px-2 bg-card border border-border rounded shadow-sm group">
                                 <span className="text-sm">👥</span>
-                                <span className="text-xs text-gray-700 flex-1 truncate">{t?.name}</span>
+                                <span className="text-xs text-foreground flex-1 truncate">{t?.name}</span>
                                 <Button variant="ghost" size="sm" className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); handleRemoveTeam(t?.id!); }}>
-                                  <X className="w-3 h-3" />
+                                  <X className="w-3 h-3 text-muted-foreground" />
                                 </Button>
                               </div>
                             ))} */}
                             {linkedPortfoliosList.map(p => (
-                              <div key={p?.id} className="flex items-center gap-2 py-1 px-2 bg-white rounded shadow-sm group">
+                              <div key={p?.id} className="flex items-center gap-2 py-1 px-2 bg-card border border-border rounded shadow-sm group">
                                 <span className="text-sm">📂</span>
-                                <span className="text-xs text-gray-700 flex-1 truncate">{p?.name}</span>
+                                <span className="text-xs text-foreground flex-1 truncate">{p?.name}</span>
                                 <Button variant="ghost" size="sm" className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); handleRemovePortfolio(p?.id!); }}>
-                                  <X className="w-3 h-3" />
+                                  <X className="w-3 h-3 text-muted-foreground" />
                                 </Button>
                               </div>
                             ))}
                             {linkedDocumentsList.map((d: any) => (
-                              <div key={d.id} className="flex items-center gap-2 py-1 px-2 bg-white rounded shadow-sm group">
+                              <div key={d.id} className="flex items-center gap-2 py-1 px-2 bg-card border border-border rounded shadow-sm group">
                                 <span className="text-sm">📄</span>
-                                <span className="text-xs text-gray-700 flex-1 truncate">{d.title}</span>
+                                <span className="text-xs text-foreground flex-1 truncate">{d.title}</span>
                                 <Button variant="ghost" size="sm" className="h-4 w-4 p-0 opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); handleRemoveDocument(d.id); }}>
-                                  <X className="w-3 h-3" />
+                                  <X className="w-3 h-3 text-muted-foreground" />
                                 </Button>
                               </div>
                             ))}
                             <Button
                               variant="ghost"
-                              className="flex items-center justify-start gap-2 py-1 px-2 text-gray-400 hover:text-gray-600 hover:bg-white rounded w-full text-left h-auto font-normal"
+                              className="flex items-center justify-start gap-2 py-1 px-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded w-full text-left h-auto font-normal"
                               onClick={(e) => { e.stopPropagation(); setShowLinkTabs(true); }}
                             >
                               <Plus className="w-3 h-3" />
@@ -1017,37 +1017,37 @@ export default function DocsLayout({
                     return (
                       <>
                         {/* Tabs Header */}
-                        <div className="flex border-b border-gray-200 px-1 pt-1">
+                        <div className="flex border-b border-border px-1 pt-1">
                           <Button
                             variant="ghost"
                             onClick={() => setActiveTab("project")}
-                            className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "project" ? "text-gray-900 border-b-2 border-black -mb-0.5" : "text-gray-500 hover:text-gray-700"}`}
+                            className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "project" ? "text-foreground border-b-2 border-primary -mb-0.5" : "text-muted-foreground hover:text-foreground"}`}
                           >
                             Project
                           </Button>
                           <Button
                             variant="ghost"
                             onClick={() => setActiveTab("portfolio")}
-                            className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "portfolio" ? "text-gray-900 border-b-2 border-black -mb-0.5" : "text-gray-500 hover:text-gray-700"}`}
+                            className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "portfolio" ? "text-foreground border-b-2 border-primary -mb-0.5" : "text-muted-foreground hover:text-foreground"}`}
                           >
                             Portfolio
                           </Button>
                           {/* <Button
                             variant="ghost"
                             onClick={() => setActiveTab("team")}
-                            className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "team" ? "text-gray-900 border-b-2 border-black -mb-0.5" : "text-gray-500 hover:text-gray-700"}`}
+                            className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "team" ? "text-foreground border-b-2 border-primary -mb-0.5" : "text-muted-foreground hover:text-foreground"}`}
                           >
                             Team
                           </Button> */}
                           <Button
                             variant="ghost"
                             onClick={() => setActiveTab("document")}
-                            className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "document" ? "text-gray-900 border-b-2 border-black -mb-0.5" : "text-gray-500 hover:text-gray-700"}`}
+                            className={`px-2 py-2 text-xs font-medium transition-colors rounded-none h-auto ${activeTab === "document" ? "text-foreground border-b-2 border-primary -mb-0.5" : "text-muted-foreground hover:text-foreground"}`}
                           >
                             Documents
                           </Button>
                           {hasLinks && (
-                            <Button variant="ghost" size="sm" className="ml-auto h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(false); }}>
+                            <Button variant="ghost" size="sm" className="ml-auto h-7 w-7 p-0 text-muted-foreground hover:text-foreground" onClick={(e) => { e.stopPropagation(); setShowLinkTabs(false); }}>
                               <ChevronLeft className="w-3.5 h-3.5" />
                             </Button>
                           )}
@@ -1073,8 +1073,8 @@ export default function DocsLayout({
 
                             return (
                               <div className="py-2 flex flex-col items-center justify-center text-center px-4">
-                                <img src={config[activeTab].image} alt={config[activeTab].title} className="w-40 h-24 mb-2 opacity-80" />
-                                <h3 className="text-sm font-semibold text-gray-900 mb-1 leading-tight">{config[activeTab].title}</h3>
+                                <img src={config[activeTab].image} alt={config[activeTab].title} className="w-40 h-24 mb-2 opacity-80 dark:brightness-90 dark:contrast-125" />
+                                <h3 className="text-sm font-semibold text-foreground mb-1 leading-tight">{config[activeTab].title}</h3>
                               </div>
                             );
                           })()}
@@ -1186,7 +1186,7 @@ export default function DocsLayout({
                     handleMenuAction("lock-page", id, currentPageDoc?.title || "", checked);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="ml-auto data-[state=checked]:bg-[#001F3F]"
+                  className="ml-auto data-[state=checked]:bg-primary"
                 />
               </DropdownMenuItem>
 
@@ -1200,7 +1200,7 @@ export default function DocsLayout({
                     handleMenuAction("lock-document", rootId || id, rootDoc?.title || "", checked);
                   }}
                   onClick={(e) => e.stopPropagation()}
-                  className="ml-auto data-[state=checked]:bg-[#001F3F]"
+                  className="ml-auto data-[state=checked]:bg-primary"
                 />
               </DropdownMenuItem>
 
@@ -1282,9 +1282,9 @@ export default function DocsLayout({
                   <Upload className="w-4 h-4 mr-2" />
                   <span>Import</span>
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="w-80 p-5"> {/* Adjusted width for better fit */}
+                <DropdownMenuSubContent className="w-80 p-5 bg-popover border border-border text-popover-foreground shadow-lg rounded-md"> {/* Adjusted width for better fit */}
                   <div
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                    className="border-2 border-dashed border-border bg-card rounded-lg p-8 text-center hover:border-primary transition-colors cursor-pointer"
                     onClick={() => fileInputRef.current?.click()}
                     onDrop={handleDrop}
                     onDragOver={handleDragOver}
@@ -1293,8 +1293,8 @@ export default function DocsLayout({
                     <div className="w-12 h-12 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center">
                       <Upload className="w-6 h-6 text-orange-500" />
                     </div>
-                    <p className="text-sm font-medium text-gray-900 mb-1">Drag & drop files here</p>
-                    <p className="text-xs text-gray-500">or choose files to upload</p>
+                    <p className="text-sm font-medium text-foreground mb-1">Drag & drop files here</p>
+                    <p className="text-xs text-muted-foreground">or choose files to upload</p>
 
                     <input
                       ref={fileInputRef}
@@ -1307,11 +1307,11 @@ export default function DocsLayout({
                   </div>
 
                   {selectedFiles.length > 0 && (
-                    <div className="mt-4 p-3 bg-gray-50 rounded-lg max-h-60 overflow-y-auto">
-                      <p className="text-xs font-semibold text-gray-500 mb-2 uppercase">Selected files:</p>
+                    <div className="mt-4 p-3 bg-muted/50 rounded-lg max-h-60 overflow-y-auto">
+                      <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase">Selected files:</p>
                       <div className="space-y-1">
                         {selectedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center justify-between text-xs p-2 bg-white rounded border">
+                          <div key={index} className="flex items-center justify-between text-xs p-2 bg-card rounded border border-border">
                             <span className="truncate max-w-[150px]">{file.name}</span>
                             <Button
                               variant="ghost"
@@ -1329,7 +1329,7 @@ export default function DocsLayout({
                       </div>
                       <Button
                         size="sm"
-                        className="w-full mt-3 bg-[#001F3F] text-white hover:bg-[#001F3F]/90"
+                        className="w-full mt-3 bg-primary text-primary-foreground hover:bg-primary/90"
                         onClick={handleUpload}
                         disabled={isUploading}
                       >
@@ -1346,13 +1346,13 @@ export default function DocsLayout({
                   <Download className="w-4 h-4 mr-2" />
                   <span>Export</span>
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
+                <DropdownMenuSubContent className="bg-popover border border-border text-popover-foreground shadow-lg rounded-md">
                   {/* First Level - Scope Selection */}
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
                       <span>This page</span>
                     </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
+                    <DropdownMenuSubContent className="bg-popover border border-border text-popover-foreground shadow-lg rounded-md">
                       <DropdownMenuItem onClick={() => handleExport('page', 'pdf')}>
                         <FileText className="w-4 h-4 mr-2" />
                         <span>PDF</span>
@@ -1372,7 +1372,7 @@ export default function DocsLayout({
                     <DropdownMenuSubTrigger>
                       <span>All pages</span>
                     </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
+                    <DropdownMenuSubContent className="bg-popover border border-border text-popover-foreground shadow-lg rounded-md">
                       <DropdownMenuItem onClick={() => handleExport('all', 'pdf')}>
                         <FileText className="w-4 h-4 mr-2" />
                         <span>PDF</span>
@@ -1408,11 +1408,11 @@ export default function DocsLayout({
           <Button
             variant="ghost"
             size="icon"
-            className="p-3"
+            className="p-3 text-muted-foreground hover:text-foreground hover:bg-muted"
             title="Close"
             onClick={handleClose}
           >
-            <X className="w-4 h-4 text-gray-600" />
+            <X className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -1435,10 +1435,10 @@ export default function DocsLayout({
           <Button
             variant="ghost"
             onClick={() => setIsSidebarCollapsed(false)}
-            className="w-12 h-full border-r border-gray-200 flex items-start justify-center pt-4 hover:bg-gray-50 shrink-0 rounded-none bg-white no-print"
+            className="w-12 h-full border-r border-border flex items-start justify-center pt-4 hover:bg-muted shrink-0 rounded-none bg-background no-print"
             title="Expand sidebar"
           >
-            <ChevronRight className="w-5 h-5 text-gray-600" />
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </Button>
         )}
 

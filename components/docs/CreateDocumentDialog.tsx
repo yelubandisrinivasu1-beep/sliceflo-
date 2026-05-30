@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { updateDocument as updateDocumentApi } from "@/lib/api/documents-api";
 import toast from "react-hot-toast";
+import Image from "next/image";
 
 interface CreateDocumentDialogProps {
   open: boolean;
@@ -237,106 +238,131 @@ export function CreateDocumentDialog({ open, onOpenChange, projectId, portfolioI
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl p-8 gap-0 bg-gray-50">
+      <DialogContent className="sm:max-w-4xl p-8 gap-0 bg-[#f8f9fa] dark:bg-background border-none rounded-[32px] shadow-lg">
         <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle className="text-2xl font-semibold text-center">
+          <DialogTitle className="text-2xl font-bold text-center text-[#0b213e] dark:text-foreground">
             Create a new Document?
           </DialogTitle>
-          <p className="text-center text-muted-foreground">
+          <p className="text-center text-muted-foreground text-sm font-medium mt-1">
             How would you like to start?
           </p>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-4 px-6 mb-6 mt-2">
-          {/* Use Templates Card */}
-          <div className="p-3 bg-white border border-gray-100 rounded-[24px] shadow-sm aspect-square overflow-hidden hover:shadow-md hover:border-blue-100 transition-all group">
+        <div className="grid grid-cols-2 gap-6 px-6 mb-6 mt-2">
+          {/* Left Column - Import & Templates Stack */}
+          <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-[24px] shadow-sm p-4 flex flex-col justify-center gap-4 transition-all duration-300">
+            {/* Import from File / Add from existing Doc */}
+            {(projectId || portfolioId) ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="w-full flex items-center p-4 rounded-[20px] bg-[#f1f3f5] dark:bg-muted/50 hover:bg-gray-200/50 dark:hover:bg-muted transition-all duration-300 cursor-pointer gap-4 text-left outline-none group">
+                    <div className="w-16 h-16 bg-white dark:bg-background rounded-[16px] flex items-center justify-center shadow-sm shrink-0 border border-gray-50 dark:border-border overflow-hidden">
+                      <Image
+                        alt="import"
+                        width={48}
+                        height={48}
+                        src="/images/docsidebar.svg"
+                        className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                    <span className="text-[15px] font-bold text-[#0b213e] dark:text-foreground">
+                      Add from existing Doc
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  className="w-80 p-0 bg-white dark:bg-card border border-gray-100 dark:border-border shadow-xl rounded-xl"
+                  align="start"
+                  onCloseAutoFocus={(e) => e.preventDefault()}
+                >
+                  <div className="p-4 border-b border-border">
+                    <h3 className="text-sm font-semibold text-foreground">Select Document</h3>
+                  </div>
+                  <ScrollArea className="h-[300px] p-4">
+                    <div className="space-y-1">
+                      {rootDocs.length > 0 ? (
+                        rootDocs.map(doc => renderDocTree(doc))
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground text-sm italic">
+                          No documents found
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                  <div className="p-4 border-t border-border">
+                    <Button
+                      onClick={() => {
+                        rootDocs.forEach(root => handleAddSelected(root.id));
+                      }}
+                      disabled={selectedDocs.size === 0}
+                      className="w-full h-10 bg-[#0b213e] dark:bg-primary text-white dark:text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center cursor-pointer"
+                    >
+                      Add Selected
+                    </Button>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <button
+                onClick={() => toast.success("Import feature coming soon!")}
+                className="w-full flex items-center p-4 rounded-[20px] bg-[#f1f3f5] dark:bg-muted/50 hover:bg-gray-200/50 dark:hover:bg-muted transition-all duration-300 cursor-pointer gap-4 text-left outline-none group"
+              >
+                <div className="w-16 h-16 bg-white dark:bg-background rounded-[16px] flex items-center justify-center shadow-sm shrink-0 border border-gray-50 dark:border-border overflow-hidden">
+                  <Image
+                    alt="import"
+                    width={48}
+                    height={48}
+                    src="/images/docsidebar.svg"
+                    className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+                <span className="text-[15px] font-bold text-[#0b213e] dark:text-foreground">
+                  Import from File
+                </span>
+              </button>
+            )}
+
+            {/* Use Templates */}
             <button
               onClick={handleUseTemplates}
-              className="w-full h-full flex flex-col items-center justify-center p-6 rounded-[20px] bg-[#eef5ff] hover:bg-[#e5f1ff] transition-all cursor-pointer gap-6"
+              className="w-full flex items-center p-4 rounded-[20px] bg-[#f1f3f5] dark:bg-muted/50 hover:bg-gray-200/50 dark:hover:bg-muted transition-all duration-300 cursor-pointer gap-4 text-left outline-none group"
             >
-              <div className="w-28 h-28 rounded-full bg-[#ffcd3c] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-300">
-                <div className="relative">
-                  <FileText className="w-12 h-12 text-white fill-white/20" />
-                  <FileText className="w-10 h-10 text-white fill-white absolute -top-1.5 -right-1.5 border-2 border-[#ffcd3c] rounded" />
-                </div>
+              <div className="w-16 h-16 bg-white dark:bg-background rounded-[16px] flex items-center justify-center shadow-sm shrink-0 border border-gray-50 dark:border-border overflow-hidden">
+                <Image
+                  alt="template"
+                  width={48}
+                  height={48}
+                  src="/images/projects/Template.svg"
+                  className="object-contain p-2 group-hover:scale-105 transition-transform duration-300"
+                />
               </div>
-              <span className="text-[15px] font-bold text-[#0b213e]">
+              <span className="text-[15px] font-bold text-[#0b213e] dark:text-foreground">
                 Use templates
               </span>
             </button>
           </div>
 
-          {/* Create Empty Document Card */}
-          <div className="p-3 bg-white border border-gray-100 rounded-[24px] shadow-sm aspect-square overflow-hidden hover:shadow-lg hover:border-blue-100 transition-all group">
+          {/* Right Column - Create Empty Document */}
+          <div className="bg-white dark:bg-card border border-gray-100 dark:border-border rounded-[24px] shadow-sm p-4 flex flex-col justify-center transition-all duration-300">
             <button
               onClick={handleCreateEmptyDocument}
-              className="w-full h-full flex flex-col items-center justify-center p-6 rounded-[20px] bg-white transition-all cursor-pointer gap-6"
+              className="w-full h-full flex flex-col items-center justify-center p-6 rounded-[20px] bg-white dark:bg-card hover:bg-gray-50/50 dark:hover:bg-muted/20 transition-all duration-300 cursor-pointer gap-6 outline-none group"
             >
-              <div className="w-28 h-28 rounded-full bg-[#f1f4f9] flex items-center justify-center group-hover:scale-105 transition-transform duration-300 relative shadow-inner">
-                <FileText className="w-12 h-12 text-gray-400" />
-                <div className="absolute top-0 right-0 w-10 h-10 bg-white rounded-full flex items-center justify-center border-4 border-white shadow-sm -mr-3 -mt-3">
-                  <div className="w-full h-full rounded-full bg-[#eef5ff] flex items-center justify-center">
-                    <Plus className="w-5 h-5 text-[#0b213e] stroke-[3px]" />
-                  </div>
+              <div className="w-28 h-28 rounded-full bg-[#f1f4f9] dark:bg-muted flex items-center justify-center group-hover:scale-105 transition-transform duration-300 relative shadow-inner">
+                <FileText className="w-12 h-12 text-gray-500 dark:text-gray-400" />
+                <div className="absolute top-0 right-0 w-8 h-8 bg-white dark:bg-card rounded-full flex items-center justify-center border border-gray-100 dark:border-border shadow-md -mr-1.5 -mt-1.5">
+                  <Plus className="w-4 h-4 text-[#0b213e] dark:text-foreground stroke-[3px]" />
                 </div>
               </div>
-              <span className="text-[15px] font-bold text-[#0b213e]">
+              <span className="text-[15px] font-bold text-[#0b213e] dark:text-foreground">
                 Create empty document
               </span>
             </button>
           </div>
         </div>
-
-        {/* Add from existing section */}
-        {(projectId || portfolioId) && (
-          <div className="px-6 pb-8 mt-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">Add from existing Doc</h3>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex h-10 w-fit min-w-[140px] items-center justify-between rounded-lg border border-gray-100 bg-white px-4 py-2 text-sm text-gray-400 shadow-sm focus:outline-none focus:ring-1 focus:ring-gray-300 transition-all hover:border-gray-200 outline-none gap-2">
-                  <span>Select Doc</span>
-                  <ChevronDownIcon className="h-4 w-4 opacity-50" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                className="w-80 p-0 bg-white border border-gray-100 shadow-xl rounded-xl"
-                align="start"
-                onCloseAutoFocus={(e) => e.preventDefault()} // Prevent closing on selection if desired, or handle appropriately
-              >
-                <div className="p-4 border-b">
-                  <h3 className="text-sm font-semibold">Select Document</h3>
-                </div>
-                <ScrollArea className="h-[300px] p-4">
-                  <div className="space-y-1">
-                    {rootDocs.length > 0 ? (
-                      rootDocs.map(doc => renderDocTree(doc))
-                    ) : (
-                      <div className="text-center py-8 text-gray-400 text-sm italic">
-                        No documents found
-                      </div>
-                    )}
-                  </div>
-                </ScrollArea>
-                <div className="p-4 border-t">
-                  <Button
-                    onClick={() => {
-                      // Call handleAddSelected for each rootDoc that has selections in its hierarchy
-                      rootDocs.forEach(root => handleAddSelected(root.id));
-                    }}
-                    disabled={selectedDocs.size === 0}
-                    className="w-full h-8 bg-[#0b213e] text-white rounded-lg text-sm font-semibold hover:bg-[#162e4d] disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center"
-                  >
-                    Add Selected
-                  </Button>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }
 
 
