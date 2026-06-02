@@ -1,6 +1,5 @@
 import { useMemo, useCallback } from 'react'
 import { useProjectsStore } from '@/stores/projects-store'
-import { useGoalsStore } from '@/stores/goals-store'
 import { useTeamStore } from '@/stores/teams-store'
 import { useWorkspaceStore } from '@/stores/workspace-store'
 import { usePortfoliosStore } from '@/stores/portfolios-store'
@@ -29,7 +28,6 @@ export function useLinkEntityAdapter(
     const { assignProjectToTeam, assignGoalToTeam, assignPortfolioToTeam } = useTeamStore()
 
     const { projects, fetchProjects } = useProjectsStore()
-    const { goals, fetchGoals } = useGoalsStore()
     const { portfolios, fetchPortfolios } = usePortfoliosStore()
     const currentWorkspace = useWorkspaceStore(
         state => state.currentWorkspace
@@ -81,35 +79,16 @@ export function useLinkEntityAdapter(
                 }))
         }
 
-        return goals
-            .filter(
-                (g): g is typeof g & { id: string } =>
-                    typeof g.id === 'string'
-            )
-            .map(g => ({
-                id: g.id,
-                name: g.title ?? 'Untitled Goal',
-                leader: (() => {
-                    const owner = g.owners?.[0];
-                    if (!owner) {
-                        return typeof g.createdBy === 'string' ? g.createdBy : g.createdBy?.id;
-                    }
-                    return typeof owner === 'string' ? owner : (owner.id || owner._id || owner.name);
-                })(),
-            }))
-    }, [type, projects, goals, teamId])
+       
+    }, [type, projects, teamId])
 
     const fetch = useCallback(async () => {
         if (type === 'project') {
             await fetchProjects()
         } else if (type === 'portfolio') {
             await fetchPortfolios(workspaceId)
-        } else {
-            if (workspaceId) {
-                await fetchGoals(workspaceId)
-            }
-        }
-    }, [type, workspaceId, fetchProjects, fetchGoals])
+        } 
+    }, [type, workspaceId, fetchProjects, fetchPortfolios])
 
     const link = useCallback(async (entityId: string) => {
         if (!teamId) return
