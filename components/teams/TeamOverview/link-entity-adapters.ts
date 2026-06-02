@@ -89,7 +89,13 @@ export function useLinkEntityAdapter(
             .map(g => ({
                 id: g.id,
                 name: g.title ?? 'Untitled Goal',
-                leader: g.owners?.[0] || (typeof g.createdBy === 'string' ? g.createdBy : g.createdBy?.id),
+                leader: (() => {
+                    const owner = g.owners?.[0];
+                    if (!owner) {
+                        return typeof g.createdBy === 'string' ? g.createdBy : g.createdBy?.id;
+                    }
+                    return typeof owner === 'string' ? owner : (owner.id || owner._id || owner.name);
+                })(),
             }))
     }, [type, projects, goals, teamId])
 

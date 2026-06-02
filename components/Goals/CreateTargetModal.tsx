@@ -1,1434 +1,880 @@
-
-
 "use client";
 
-import { useEffect, useState } from "react";
-import { X, Calendar, ChevronDown, Search, Users, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import React, { useState, useEffect } from "react";
 import { format } from "date-fns";
+import {
+  X,
+  ArrowLeft,
+  Calendar as CalendarIcon,
+  ChevronDown,
+  ChevronRight,
+  Hash,
+  ToggleLeft,
+  DollarSign,
+  Briefcase,
+  Plus,
+  Minus,
+  Search,
+  Check,
+  Folder,
+  Loader2
+} from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ProseMirrorEditor } from "@/components/proseMirror/ProseMirrorEditor";
-import { cn } from "@/lib/utils";
+
 import { useGoalsStore } from "@/stores/goals-store";
-import { GoalTarget, TargetType } from "@/types/goal.types";
-import { useProjectsStore } from "@/stores/projects-store";
-import { useTasksStore } from "@/stores/tasks-store";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useProfileStore } from "@/stores/profile-store";
-import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { toast } from "@/components/ui/sonner";
-
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-
-
-// Dummy data for projects, milestones, and tasks
-
-const dummyMilestones = [
-    { id: "mile-1", name: "Q1 Product Launch", project: "Project AAA", owner: "John Doe" },
-    { id: "mile-2", name: "Backend API Development", project: "Project BBB", owner: "Jane Smith" },
-    { id: "mile-3", name: "UI/UX Design Phase", project: "Project CCC", owner: "Mike Johnson" },
-    { id: "mile-4", name: "Testing & QA", project: "Project DDD", owner: "Sarah Williams" },
-];
-
-const currencies = [
-    { code: "USD", name: "US Dollar", symbol: "$" },
-    { code: "EUR", name: "Euro", symbol: "€" },
-    { code: "GBP", name: "British Pound", symbol: "£" },
-    { code: "AED", name: "United Arab Emirates Dirham", symbol: "dh" },
-    { code: "AFN", name: "Afghan Afghani", symbol: "؋" },
-    { code: "ALL", name: "Albanian Lek", symbol: "L" },
-    { code: "AMD", name: "Armenian Dram", symbol: "֏" },
-    { code: "ANG", name: "Netherlands Antillean Guilder", symbol: "ƒ" },
-];
-
-
+import { useProjectsStore } from "@/stores/projects-store";
+import { useTasksStore } from "@/stores/tasks-store";
+import { TARGET_TYPE_COLORS, TargetType } from "@/types/goal.types";
+import { toast } from "sonner";
 
 interface CreateTargetModalProps {
-    isOpen: boolean;
-    onClose: () => void;
-    goalId: string;
-    goalName: string;
-    targetToEdit?: GoalTarget | null;
-    goalAssignedTo?: any[]; // members assigned to the parent goal
+  isOpen: boolean;
+  onClose: () => void;
+  goalId: string;
+  goalTitle: string;
 }
 
-export default function CreateTargetModal({
-    isOpen,
-    onClose,
-    goalId,
-    goalName,
-    targetToEdit,
-    goalAssignedTo = [],
-}: CreateTargetModalProps) {
-    const { createTarget, updateTarget, currentGoal } = useGoalsStore();
-    const { workspaceMembers } = useWorkspaceStore();
-    const { user: currentUser } = useProfileStore();
-    const { projects, fetchProjects, getMembersByProject } = useProjectsStore();
-    const { tasks } = useTasksStore();
-    const { currentWorkspace } = useWorkspaceStore();
+const CURRENCIES = [
+  { code: "INR", symbol: "₹", name: "Indian Rupee" },
+  { code: "USD", symbol: "$", name: "US Dollar" },
+  { code: "EUR", symbol: "€", name: "Euro" },
+  { code: "GBP", symbol: "£", name: "British Pound" },
+  { code: "JPY", symbol: "¥", name: "Japanese Yen" },
+];
 
-    const fetchTasks = useTasksStore(state => state.fetchTasks);
+export function CreateTargetModal({ isOpen, onClose, goalId, goalTitle }: CreateTargetModalProps) {
+  // Store actions and data
+  const { createTarget } = useGoalsStore();
+  const { currentWorkspace, workspaceMembers, fetchWorkspaceMembers } = useWorkspaceStore();
+  const { user } = useProfileStore();
+  const { projects, fetchProjects } = useProjectsStore();
+  const { tasks, fetchTasks } = useTasksStore();
 
-    useEffect(() => {
-        if (isOpen) {
-            fetchProjects();
-        }
-    }, [isOpen, fetchProjects]);
+  // Core Form States
+  const [label, setLabel] = useState("");
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [description, setDescription] = useState("");
+  const [owner, setOwner] = useState<any>(null);
+  const [targetType, setTargetType] = useState<TargetType>("number");
+  
+  // Number inputs
+  const [numberStart, setNumberStart] = useState<number>(0);
+  const [numberEnd, setNumberEnd] = useState<number>(100);
 
-    // Fetch tasks for each project once projects are loaded
-    useEffect(() => {
-        if (isOpen && projects.length > 0) {
-            projects.forEach(project => {
-                if (project.id) fetchTasks(project.id);
-            });
-        }
-    }, [isOpen, projects, fetchTasks]);
+  // Currency inputs
+  const [currencyStart, setCurrencyStart] = useState<number>(0);
+  const [currencyEnd, setCurrencyEnd] = useState<number>(1000);
+  const [currencyUnit, setCurrencyUnit] = useState<string>("INR");
 
-    const [targetName, setTargetName] = useState("");
-    const [startDate, setStartDate] = useState<Date>();
-    const [targetDate, setTargetDate] = useState<Date>();
-    const [description, setDescription] = useState("");
-    const [owner, setOwner] = useState("");
-    const [selectedOwner, setSelectedOwner] = useState<{
-        userId: string;
-        name: string;
-        email: string;
-        profilePicture?: string;
-    } | null>(null);
-    const [selectedType, setSelectedType] = useState<string>("");
-    const [selectedColor, setSelectedColor] = useState("#6366F1");
+  // Project (tasks) checklist inputs
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([]);
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  const [taskSearchQuery, setTaskSearchQuery] = useState("");
 
-    const [startNumber, setStartNumber] = useState<string>("0");
-    const [targetNumber, setTargetNumber] = useState<string>("0");
+  // UI Interactive States
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [datePopoverOpen, setDatePopoverOpen] = useState(false);
+  const [currencyPopoverOpen, setCurrencyPopoverOpen] = useState(false);
 
-    const [startCurrency, setStartCurrency] = useState<string>("0");
-    const [targetCurrency, setTargetCurrency] = useState<string>("0");
-    const [selectedCurrency, setSelectedCurrency] = useState("USD");
+  // Map workspace members to mentionable members for ProseMirrorEditor
+  const mentionableMembers = workspaceMembers.map((m: any) => ({
+    id: m.userId || m.id || m._id || "",
+    name: m.name || "Unknown",
+    avatar: m.profilePicture || m.avatar || undefined,
+  }));
 
-    const [isProjectPopoverOpen, setIsProjectPopoverOpen] = useState(false);
-    const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<"project" | "milestones" | "tasks">("project");
-    const [searchQuery, setSearchQuery] = useState("");
+  // Trigger projects fetch on mount/load
+  useEffect(() => {
+    if (isOpen) {
+      fetchProjects().catch(console.error);
+      if (currentWorkspace?.id) {
+        fetchWorkspaceMembers(currentWorkspace.id).catch(console.error);
+      }
+    }
+  }, [isOpen, currentWorkspace?.id, fetchProjects, fetchWorkspaceMembers]);
 
-    const [selectedMilestones, setSelectedMilestones] = useState<string[]>([]);
-    const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
-    const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
+  // Set default owner to logged in user if available
+  useEffect(() => {
+    if (isOpen && user && workspaceMembers.length > 0) {
+      const currentUserId = (user as any).id || (user as any)._id;
+      const matched = workspaceMembers.find((m) => m.userId === currentUserId);
+      if (matched) {
+        setOwner(matched);
+      } else {
+        setOwner(workspaceMembers[0]);
+      }
+    }
+  }, [isOpen, user, workspaceMembers]);
 
-    const toggleProjectExpand = (projectId: string) => {
-        setExpandedProjects(prev => {
-            const next = new Set(prev);
-            if (next.has(projectId)) {
-                next.delete(projectId);
-            } else {
-                next.add(projectId);
-            }
-            return next;
-        });
-    };
+  // Handle Project Expansion for Task Loading
+  const toggleProjectExpand = async (projectId: string) => {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) {
+        next.delete(projectId);
+      } else {
+        next.add(projectId);
+      }
+      return next;
+    });
 
-    const targetTypes = [
-        {
-            id: "number",
-            name: "Number",
-            subtitle: "Any Number like 1 or 2",
-            color: "bg-[#9BB2DC33] border-[#9BB2DC33]",
-            icon: <img src="/images/group.svg" alt="Number" className="w-5 h-5" />,
-            textColor: "#9BB2DC",
-        },
-        {
-            id: "boolean",
-            name: "True / False",
-            subtitle: "Done or Not Done",
-            color: "bg-[#FF950033] border-[#FF950033]",
-            textColor: "#FF9500",
-            icon: <img src="/images/vector.svg" alt="Boolean" className="w-5 h-5" />,
-        },
-        {
-            id: "currency",
-            name: "Currency",
-            subtitle: "Show me the Money",
-            color: "bg-[#34C75933] border-[#34C75933]",
-            textColor: "#34C759",
-            icon: <img src="/images/Dollar.svg" alt="Currency" className="w-5 h-5" />,
-        },
-        {
-            id: "projects",
-            name: "Projects",
-            subtitle: "Track Completion of Tasks",
-            color: "bg-[#D3B79A33] border-[#D3B79A33]",
-            icon: <img src="/images/Icon.svg" alt="Projects" className="w-5 h-5" />,
-            textColor: "#A2845E",
-        },
-    ];
+    try {
+      await fetchTasks(projectId);
+    } catch (err) {
+      console.error("Failed to load project tasks:", err);
+    }
+  };
 
-    // useEffect(() => {
-    //     if (!targetToEdit) {
-    //         setTargetName("");
-    //         setTargetDate(undefined);
-    //         setDescription("");
-    //         setOwner("");
-    //         setSelectedType("");
-    //         setStartNumber(0);
-    //         setTargetNumber(0);
-    //         return;
-    //     }
+  const handleToggleTaskSelect = (taskId: string) => {
+    setSelectedTaskIds((prev) => {
+      if (prev.includes(taskId)) {
+        return prev.filter((id) => id !== taskId);
+      } else {
+        return [...prev, taskId];
+      }
+    });
+  };
 
-    //     setTargetName(targetToEdit.label);
-    //     setSelectedType(targetToEdit.type);
-    //     setStartNumber(targetToEdit.value?.start ?? 0);
-    //     setTargetNumber(targetToEdit.value?.end ?? 0);
-    // }, [targetToEdit]);
+  const handleSelectAllProjectTasks = async (projectId: string, tasksToSelect: any[], selectAll: boolean) => {
+    const taskIds = tasksToSelect.map(t => t.id).filter(Boolean);
+    setSelectedTaskIds((prev) => {
+      if (selectAll) {
+        return [...new Set([...prev, ...taskIds])];
+      } else {
+        return prev.filter(id => !taskIds.includes(id));
+      }
+    });
+  };
 
-    useEffect(() => {
-        if (!isOpen) {
-            setTargetName("");
-            setStartDate(undefined);
-            setTargetDate(undefined);
-            setDescription("");
-            setOwner("");
-            setSelectedType("");
-            setStartNumber("0");
-            setTargetNumber("0");
-            setStartCurrency("0");
-            setTargetCurrency("0");
-            setSelectedCurrency("USD");
-            setSelectedProjects([]);
-            setSelectedTasks([]);
-            setSelectedMilestones([]);
-            setSearchQuery("");
-            setActiveTab("project");
-            return;
-        }
+  // Submission handler
+  const handleSubmit = async () => {
+    if (!label.trim()) {
+      toast.error("Please enter a Target name");
+      return;
+    }
 
-        if (!targetToEdit) {
-            setTargetName("");
-            setStartDate(undefined);
-            setTargetDate(undefined);
-            setDescription("");
-            setOwner("");
-            setSelectedType("");
-            setStartNumber("0");
-            setTargetNumber("0");
-            setStartCurrency("0");
-            setTargetCurrency("0");
-            setSelectedCurrency("USD");
-            setSelectedProjects([]);
-            setSelectedTasks([]);
-            setSelectedMilestones([]);
-            return;
-        }
+    setIsSubmitting(true);
+    try {
+      let valuePayload: any = null;
+      let targetUnit = "";
 
-        setTargetName(targetToEdit.label);
-        setDescription(targetToEdit.description || "");
-        setSelectedType(targetToEdit.type === "task" ? "projects" : targetToEdit.type);
-        setSelectedTasks(targetToEdit.linkedTaskIds || []);
-        setStartNumber(String(targetToEdit.value?.start ?? 0));
-        setTargetNumber(String(targetToEdit.value?.end ?? 0));
-        setStartCurrency(String(targetToEdit.value?.start ?? 0));
-        setTargetCurrency(String(targetToEdit.value?.end ?? 0));
-        setSelectedCurrency((targetToEdit as any).currencyType || targetToEdit.value?.currencyType || "USD");
-        if (targetToEdit.startDate) {
-            setStartDate(new Date(targetToEdit.startDate));
-        } else {
-            setStartDate(undefined);
-        }
-        if (targetToEdit.endDate) {
-            setTargetDate(new Date(targetToEdit.endDate));
-        } else {
-            setTargetDate(undefined);
-        }
+      if (targetType === "number") {
+        valuePayload = {
+          start: numberStart,
+          end: numberEnd,
+          current: numberStart
+        };
+      } else if (targetType === "currency") {
+        valuePayload = {
+          start: currencyStart,
+          end: currencyEnd,
+          current: currencyStart,
+          currencyType: currencyUnit
+        };
+        targetUnit = currencyUnit;
+      } else if (targetType === "boolean") {
+        valuePayload = false;
+      } else if (targetType === "task") {
+        valuePayload = {
+          start: 0,
+          end: selectedTaskIds.length || 1,
+          current: 0
+        };
+      }
 
-        // Handle assignedTo — API returns a string ID on targets, not an array
-        if (targetToEdit.assignedTo) {
-            const rawAssigned = targetToEdit.assignedTo as any;
-            let ownerId = '';
-            if (typeof rawAssigned === 'string') {
-                ownerId = rawAssigned;
-            } else if (Array.isArray(rawAssigned) && rawAssigned.length > 0) {
-                const first = rawAssigned[0];
-                ownerId = typeof first === 'string' ? first : (first.userId || first._id || first.id || '');
-            }
-            if (ownerId) {
-                const member = workspaceMembers.find(m => m.userId === ownerId);
-                if (member) {
-                    setSelectedOwner({
-                        userId: member.userId,
-                        name: member.name || '',
-                        email: member.email || '',
-                        profilePicture: member.profilePicture || undefined
-                    });
-                    setOwner(member.name || member.email || '');
-                }
-            }
-        }
-    }, [targetToEdit, isOpen, workspaceMembers]);
+      const bodyPayload = {
+        label: label.trim(),
+        type: targetType,
+        description: description,
+        unit: targetUnit || undefined,
+        value: valuePayload,
+        status: "not started" as const,
+        linkedTaskIds: targetType === "task" ? selectedTaskIds : [],
+        color: TARGET_TYPE_COLORS[targetType] || "#9BB2DC",
+        assignedTo: owner ? [owner.userId || owner.id || owner._id] : [],
+        startDate: new Date().toISOString(),
+        endDate: endDate ? endDate.toISOString() : undefined,
+      };
 
-    const isFormValid = !!targetName.trim() &&
-        !!targetDate &&
-        !!selectedOwner &&
-        (selectedType === 'projects'
-            ? selectedTasks.length > 0
-            : !!targetDate)
+      const result = await createTarget(goalId, bodyPayload, currentWorkspace?.id);
+      if (result) {
+        toast.success("Target created successfully!");
+        onClose();
+        // Reset states
+        setLabel("");
+        setEndDate(undefined);
+        setDescription("");
+        setTargetType("number");
+        setNumberStart(0);
+        setNumberEnd(100);
+        setCurrencyStart(0);
+        setCurrencyEnd(1000);
+        setSelectedTaskIds([]);
+      } else {
+        toast.error("Failed to create target. Please try again.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to create target");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
-    const handleSave = async () => {
-        if (!selectedType) {
-            toast("error", { title: "Error", description: "Please select a target type" });
-            return;
-        }
-        if (!targetName.trim()) {
-            toast("error", { title: "Error", description: "Please enter a target name" });
-            return;
-        }
-        const apiType: TargetType =
-            selectedType === "projects" ? "task" : (selectedType as TargetType);
+  const isFormValid = label.trim().length > 0;
 
-        try {
-            if (!targetToEdit) {
-                let body: any = {
-                    label: targetName.trim(),
-                    description: description.trim(),
-                    type: apiType,
-                    status: "not started",
-                    color: selectedColor || "#6366F1",
-                    assignedTo: selectedOwner ? selectedOwner.userId : null,
-                    startDate: (startDate && !isNaN(startDate.getTime())) ? startDate.toISOString() : null,
-                    endDate: (targetDate && !isNaN(targetDate.getTime())) ? targetDate.toISOString() : null,
-                    targetDate: (targetDate && !isNaN(targetDate.getTime())) ? targetDate.toISOString() : null,
-                };
-
-                if (selectedType === "number") {
-                    body.unit = "Number";
-                    body.value = {
-                        start: Number(startNumber) || 0,
-                        end: Number(targetNumber) || 0,
-                        current: Number(startNumber) || 0
-                    };
-                } else if (selectedType === "currency") {
-                    body.unit = "Currency";
-                    body.value = {
-                        start: Number(startCurrency) || 0,
-                        end: Number(targetCurrency) || 0,
-                        current: Number(startCurrency) || 0,
-                        currencyType: selectedCurrency
-                    };
-                } else if (selectedType === "boolean") {
-                    body.value = false;
-                } else if (selectedType === "projects") {
-                    body.type = "task";
-                    body.linkedTaskIds = selectedTasks.filter(id => id && id.trim() !== '');
-
-                    delete body.value;
-                }
-
-                await createTarget(goalId, body, currentWorkspace?.id);
-            } else {
-                let updates: any = {
-                    label: targetName.trim(),
-                    description: description.trim(),
-                    startDate: (startDate && !isNaN(startDate.getTime())) ? startDate.toISOString() : null,
-                    endDate: (targetDate && !isNaN(targetDate.getTime())) ? targetDate.toISOString() : null,
-                    targetDate: (targetDate && !isNaN(targetDate.getTime())) ? targetDate.toISOString() : null,
-                    assignedTo: selectedOwner ? selectedOwner.userId : null,
-                };
-
-                if (selectedType === 'number') {
-                    updates.value = {
-                        start: Number(startNumber) || 0,
-                        end: Number(targetNumber) || 0,
-                    };
-                } else if (selectedType === 'currency') {
-                    updates.value = {
-                        start: Number(startCurrency) || 0,
-                        end: Number(targetCurrency) || 0,
-                        currencyType: selectedCurrency,
-                    };
-                } else if (selectedType === 'boolean') {
-                    updates.value = false;
-                } else if (selectedType === 'projects') {
-                    updates.linkedTaskIds = selectedTasks.filter(id => id && id.trim() !== '');
-                } console.log(" Updating target with:", updates);
-                await updateTarget(goalId, targetToEdit.id, updates, currentWorkspace?.id);
-            }
-
-            toast("success", { title: "Success", description: targetToEdit ? "Target updated successfully" : "Target created successfully" });
-            onClose();
-        } catch (error) {
-            console.error(" Failed to save target:", error);
-            toast("error", { title: "Error", description: "Failed to save target. Please try again." });
-        }
-    };
-
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent">
-            <div className="bg-card text-card-foreground rounded-2xl shadow-xl shadow-black/20 w-full max-w-5xl max-h-[90vh] overflow-y-auto border border-border">
-
-                {/* Header */}
-                <div
-                    className="flex items-center justify-between px-4 py-3 border-b sticky top-0 bg-card z-10 border-border"
-                    data-testid="modal-header"
-                >
-                    <div className="flex items-center gap-2" data-testid="modal-header-left">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full w-8 h-8"
-                            onClick={onClose}
-                            data-testid="modal-back-button"
-                        >
-                            <span className="text-sm">←</span>
-                        </Button>
-                        <h2
-                            className="text-base font-semibold text-foreground"
-                            data-testid="modal-title"
-                        >
-                            {goalName}
-                        </h2>
-                    </div>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-full w-8 h-8"
-                        onClick={onClose}
-                        data-testid="modal-close-button"
-                    >
-                        <X size={16} />
-                    </Button>
-                </div>
-
-
-
-                {/* Body */}
-                <div className="px-6 py-6 space-y-2" data-testid="modal-body">
-                    {/* Target Name & Date */}
-                    <div
-                        className="bg-muted rounded-lg p-5 mb-2"
-                        data-testid="target-name-date-section"
-                    >
-                        <div
-                            className="grid grid-cols-2 gap-3"
-                            data-testid="name-date-grid"
-                        >
-                            <div data-testid="target-name-field">
-                                <label
-                                    className="block text-xs font-medium text-muted-foreground mb-1.5"
-                                    data-testid="target-name-label"
-                                >
-                                    Target name
-                                </label>
-                                <Input
-                                    value={targetName}
-                                    onChange={(e) => setTargetName(e.target.value)}
-                                    placeholder="e.g. Target name 1"
-                                    className="bg-background h-9 text-sm border-border"
-                                    data-testid="target-name-input"
-                                />
-                            </div>
-
-                            <div data-testid="target-date-field">
-                                <label
-                                    className="block text-xs font-medium text-muted-foreground mb-1.5"
-                                    data-testid="target-date-label"
-                                >
-                                    Target End Date
-                                </label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className={cn(
-                                                "w-full h-9 justify-start text-left font-normal bg-background text-sm border-border",
-                                                !targetDate && "text-muted-foreground"
-                                            )}
-                                            data-testid="target-date-button"
-                                        >
-                                            <Calendar className="mr-1.5 h-3.5 w-3.5" />
-                                            {targetDate
-                                                ? format(targetDate, "dd/MM/yyyy")
-                                                : "Set a Target Date"}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <CalendarPicker
-                                            mode="single"
-                                            selected={targetDate}
-                                            onSelect={setTargetDate}
-                                            initialFocus
-                                            data-testid="target-date-calendar"
-                                            disabled={(date) => date < new Date()}
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                        </div>
-                    </div>
-                    {/* Target Description */}
-                    <div className="border border-border border-l-4 border-l-primary rounded-lg p-4 space-y-3 target-description-section">
-                        <label className="block text-sm font-medium text-foreground mb-2" data-testid="description-label">
-                            Target description
-                        </label>
-                        <ProseMirrorEditor
-                            key={targetToEdit?.id || 'new-target'}
-                            initialContent={description}
-                            mentionableMembers={workspaceMembers.map(m => ({
-                                id: m.userId,
-                                name: m.name,
-                                profilePictureUrl: m.avatar
-                            }))}
-                            onBlur={(content) => setDescription(content)}
-                            placeholder="Add description..."
-                            className="min-h-[120px] bg-background focus:ring-transparent border-border rounded-md"
-                        />
-                    </div>
-
-                    {/* Target Owner */}
-                    <div
-                        className="border border-border border-l-4 border-l-primary rounded-lg bg-card px-5 py-5"
-                        data-testid="target-owner-section"
-                    >
-                        <div
-                            className="flex items-center justify-between gap-4"
-                            data-testid="owner-content"
-                        >
-                            <div data-testid="owner-text">
-                                <h3
-                                    className="font-semibold text-sm text-foreground mb-0.5"
-                                    data-testid="owner-title"
-                                >
-                                    Target owner
-                                </h3>
-                                <p
-                                    className="text-xs text-muted-foreground"
-                                    data-testid="owner-subtitle"
-                                >
-                                    Select an owner for the target
-                                </p>
-                            </div>
-
-                            <div
-                                className="w-[300px]"
-                                data-testid="owner-input-container"
-                            >
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <div
-                                            className="relative cursor-pointer"
-                                            data-testid="owner-input-wrapper"
-                                        >
-                                            <Input
-                                                value={owner}
-                                                readOnly
-                                                placeholder="Select Owner"
-                                                className="bg-background border-border pl-10 pr-7 h-9 text-xs cursor-pointer"
-                                                data-testid="target-owner-input"
-                                            />
-
-                                            <div
-                                                className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none"
-                                                data-testid="owner-avatar-icon"
-                                            >
-                                                {(() => {
-                                                    const pic = selectedOwner?.profilePicture;
-                                                    const url = pic && pic.startsWith('http')
-                                                        ? pic
-                                                        : pic
-                                                            ? `${process.env.NEXT_PUBLIC_S3_BASE_URL}/${pic}`
-                                                            : null;
-                                                    return url ? (
-                                                        <img
-                                                            src={url}
-                                                            alt={selectedOwner?.name || "Owner"}
-                                                            className="w-6 h-6 rounded-full object-cover border border-border"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-6 h-6 rounded-full border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground font-bold bg-muted">
-                                                            {(selectedOwner?.name || "👤").charAt(0).toUpperCase()}
-                                                        </div>
-                                                    );
-                                                })()}
-                                            </div>
-
-                                            <button
-                                                type="button"
-                                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hov:text-foreground text-xs pointer-events-none"
-                                                data-testid="owner-dropdown-arrow"
-                                            >
-                                                <ChevronDown size={14} />
-                                            </button>
-                                        </div>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent className="w-[300px] p-0" align="end">
-                                        <DropdownMenuLabel className="px-3 py-2 text-xs font-semibold">
-                                            Select Target Owner
-                                        </DropdownMenuLabel>
-                                        <DropdownMenuSeparator className="m-0" />
-                                        <div className="max-h-[250px] overflow-y-auto">
-                                            {/* Filter workspace members to only those assigned to the goal */}
-                                            {workspaceMembers
-                                                .filter(m => {
-                                                    const assigned = goalAssignedTo.length > 0
-                                                        ? goalAssignedTo
-                                                        : (currentGoal?.assignedTo || []);
-                                                    if (assigned.length === 0) return true; // show all if no filter
-                                                    const assignedIds = assigned.map((item: any) =>
-                                                        typeof item === 'string' ? item : (item._id || item.id)
-                                                    );
-                                                    return assignedIds.includes(m.userId);
-                                                })
-                                                .map((member) => (
-                                                    <DropdownMenuItem
-                                                        key={member.userId}
-                                                        onSelect={() => {
-                                                            setSelectedOwner({
-                                                                userId: member.userId,
-                                                                name: member.name || '',
-                                                                email: member.email || '',
-                                                                profilePicture: member.profilePicture || undefined
-                                                            });
-                                                            setOwner(member.name || member.email || '');
-                                                        }}
-                                                        className="flex items-center justify-between px-3 py-2 cursor-pointer focus:bg-muted"
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            {(() => {
-                                                                const pic = member.profilePicture || member.avatar;
-                                                                const url = pic && pic.startsWith('http')
-                                                                    ? pic
-                                                                    : pic
-                                                                        ? `${process.env.NEXT_PUBLIC_S3_BASE_URL}/${pic}`
-                                                                        : null;
-                                                                return url ? (
-                                                                    <img
-                                                                        src={url}
-                                                                        alt={member.name || "Member"}
-                                                                        className="w-7 h-7 rounded-full object-cover flex-shrink-0"
-                                                                    />
-                                                                ) : (
-                                                                    <div className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
-                                                                        {(member.name || member.email || "?").charAt(0).toUpperCase()}
-                                                                    </div>
-                                                                );
-                                                            })()}
-                                                            <div className="min-w-0">
-                                                                <p className="text-xs font-medium text-foreground truncate">
-                                                                    {member.name} {member.userId === currentUser?._id && "(You)"}
-                                                                </p>
-                                                                <p className="text-[10px] text-muted-foreground truncate">
-                                                                    {member.email}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        {selectedOwner?.userId === member.userId && (
-                                                            <Check size={14} className="text-primary" />
-                                                        )}
-                                                    </DropdownMenuItem>
-                                                ))}
-                                        </div>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </div>
-                    </div>
-
-
-
-                    {/* Type of Target */}
-                    <div
-                        className="border border-border border-l-4 border-l-primary rounded-lg bg-card px-4 py-3"
-                        data-testid="target-type-section"
-                    >
-                        <div
-                            className="flex gap-4 items-start"
-                            data-testid="target-type-content"
-                        >
-                            {/* Left: label + description */}
-                            <div
-                                className="w-[200px]"
-                                data-testid="target-type-label-section"
-                            >
-                                <h3
-                                    className="font-semibold text-sm text-foreground mb-0.5"
-                                    data-testid="target-type-title"
-                                >
-                                    Type of Target
-                                </h3>
-                                <p
-                                    className="text-xs text-muted-foreground"
-                                    data-testid="target-type-subtitle"
-                                >
-                                    How do you want to measure this result?
-                                </p>
-                            </div>
-
-                            {/* Right: cards + number config */}
-                            <div
-                                className="flex-1"
-                                data-testid="target-type-cards-container"
-                            >
-                                {/* Top cards row */}
-                                <div
-                                    className="grid grid-cols-4 gap-3 mb-3"
-                                    data-testid="target-type-grid"
-                                >
-                                    {targetTypes.map((type) => {
-                                        const isActive = selectedType === type.id;
-                                        return (
-                                            <button
-                                                key={type.id}
-                                                type="button"
-                                                onClick={() => setSelectedType(type.id)}
-                                                className="relative transition-all"
-                                                data-testid={`target-type-card-${type.id}`}
-                                                aria-pressed={isActive}
-                                            >
-                                                <div
-                                                    className={cn(
-                                                        "w-full h-[90px] rounded-md border border-transparent bg-muted flex flex-col items-center justify-center overflow-hidden shadow-sm",
-                                                        type.color,
-                                                        isActive ? "translate-y-[1px]" : ""
-                                                    )}
-                                                    data-testid={`target-type-card-content-${type.id}`}
-                                                >
-                                                    <div
-                                                        className="text-2xl mb-1.5"
-                                                        data-testid={`target-type-icon-${type.id}`}
-                                                    >
-                                                        {type.icon}
-                                                    </div>
-                                                    <p
-                                                        className="font-semibold text-xs mb-0.5"
-                                                        style={{ color: type.textColor }}
-                                                        data-testid={`target-type-name-${type.id}`}
-                                                    >
-                                                        {type.name}
-                                                    </p>
-                                                    <p
-                                                        className="text-[11px]"
-                                                        style={{ color: type.textColor }}
-                                                        data-testid={`target-type-subtitle-${type.id}`}
-                                                    >
-                                                        {type.subtitle}
-                                                    </p>
-
-
-                                                    {isActive && (
-                                                        <div
-                                                            className="absolute inset-x-0 bottom-0 h-1 bg-primary"
-                                                            data-testid={`target-type-active-indicator-${type.id}`}
-                                                        />
-                                                    )}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-
-                                {/* Number range panel */}
-                                {selectedType === "number" && (
-                                    <div
-                                        className="mt-1 bg-muted rounded-2xl px-2.5 py-2.5 flex items-center gap-3"
-                                        data-testid="number-range-panel"
-                                    >
-                                        {/* Starting Number */}
-                                        <div className="flex-1" data-testid="start-number-section">
-                                            <p
-                                                className="text-[10px] font-medium text-muted-foreground mb-1"
-                                                data-testid="start-number-label"
-                                            >
-                                                Starting Number
-                                            </p>
-                                            <div
-                                                className="flex items-center rounded-full bg-background border border-border px-2.5 py-1 shadow-sm"
-                                                data-testid="start-number-input-group"
-                                            >
-                                                <div
-                                                    className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] mr-1.5"
-                                                    data-testid="start-number-badge"
-                                                >
-                                                    ①
-                                                </div>
-                                                <Input
-                                                    type="number"
-                                                    value={startNumber}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        if (startNumber === "0" && val.length > 1 && val.startsWith("0")) {
-                                                            setStartNumber(val.substring(1));
-                                                        } else {
-                                                            setStartNumber(val || "0");
-                                                        }
-                                                    }}
-                                                    className="flex-1 h-7 border-0 bg-transparent px-0 text-[11px] focus-visible:ring-0 focus-visible:ring-offset-0"
-                                                    data-testid="start-number-input"
-                                                />
-                                                <div
-                                                    className="flex items-center gap-0.5 ml-1"
-                                                    data-testid="start-number-controls"
-                                                >
-                                                    <Button
-                                                        type="button"
-                                                        size="icon"
-                                                        variant="outline"
-                                                        className="w-5 h-5 rounded-full border-border text-[10px] leading-none"
-                                                        onClick={() =>
-                                                            setStartNumber((n) => String(Math.max(0, (Number(n) || 0) + 1)))
-                                                        }
-                                                        data-testid="start-number-increase"
-                                                    >
-                                                        +
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="icon"
-                                                        variant="outline"
-                                                        className="w-5 h-5 rounded-full border-border text-[10px] leading-none"
-                                                        onClick={() =>
-                                                            setStartNumber((n) => String(Math.max(0, (Number(n) || 0) - 1)))
-                                                        }
-                                                        data-testid="start-number-decrease"
-                                                    >
-                                                        −
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Arrow */}
-                                        <div
-                                            className="text-base text-primary font-semibold"
-                                            data-testid="number-range-arrow"
-                                        >
-                                            →
-                                        </div>
-
-                                        {/* Target Number */}
-                                        <div className="flex-1" data-testid="target-number-section">
-                                            <p
-                                                className="text-[10px] font-medium text-muted-foreground mb-1"
-                                                data-testid="target-number-label"
-                                            >
-                                                Target Number
-                                            </p>
-                                            <div
-                                                className="flex items-center rounded-full bg-background border border-border px-2.5 py-1 shadow-sm"
-                                                data-testid="target-number-input-group"
-                                            >
-                                                <div
-                                                    className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-[9px] mr-1.5"
-                                                    data-testid="target-number-badge"
-                                                >
-                                                    ②
-                                                </div>
-                                                <Input
-                                                    type="number"
-                                                    value={targetNumber}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        if (targetNumber === "0" && val.length > 1 && val.startsWith("0")) {
-                                                            setTargetNumber(val.substring(1));
-                                                        } else {
-                                                            setTargetNumber(val || "0");
-                                                        }
-                                                    }}
-                                                    className="flex-1 h-7 border-0 bg-transparent px-0 text-[11px] focus-visible:ring-0 focus-visible:ring-offset-0"
-                                                    data-testid="target-number-input"
-                                                />
-                                                <div
-                                                    className="flex items-center gap-0.5 ml-1"
-                                                    data-testid="target-number-controls"
-                                                >
-                                                    <Button
-                                                        type="button"
-                                                        size="icon"
-                                                        variant="outline"
-                                                        className="w-5 h-5 rounded-full border-border text-[10px] leading-none"
-                                                        onClick={() =>
-                                                            setTargetNumber((n) => String(Math.max(0, (Number(n) || 0) + 1)))
-                                                        }
-                                                        data-testid="target-number-increase"
-                                                    >
-                                                        +
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="icon"
-                                                        variant="outline"
-                                                        className="w-5 h-5 rounded-full border-border text-[10px] leading-none"
-                                                        onClick={() =>
-                                                            setTargetNumber((n) => String(Math.max(0, (Number(n) || 0) - 1)))
-                                                        }
-                                                        data-testid="target-number-decrease"
-                                                    >
-                                                        −
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Currency range panel */}
-                                {selectedType === "currency" && (
-                                    <div
-                                        className="mt-1 bg-muted rounded-2xl px-2.5 py-2.5 flex items-center gap-3"
-                                        data-testid="currency-range-panel"
-                                    >
-                                        {/* Starting Amount */}
-                                        <div className="flex-1" data-testid="start-currency-section">
-                                            <p
-                                                className="text-[10px] font-medium text-muted-foreground mb-1"
-                                                data-testid="start-currency-label"
-                                            >
-                                                Starting Amount
-                                            </p>
-                                            <div
-                                                className="flex items-center rounded-full bg-background border border-border px-2.5 py-1 shadow-sm"
-                                                data-testid="start-currency-input-group"
-                                            >
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <div
-                                                            className="w-5 h-5 rounded-full bg-muted text-foreground flex items-center justify-center text-[10px] mr-1.5 cursor-pointer hover:bg-muted/80 transition-colors"
-                                                            data-testid="start-currency-badge"
-                                                        >
-                                                            {currencies.find(c => c.code === selectedCurrency)?.symbol || "$"}
-                                                        </div>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="start" className="w-[300px] max-h-[400px] overflow-y-auto bg-popover border-border">
-                                                        <div className="p-2 border-b text-xs font-medium text-muted-foreground border-border">Currency</div>
-                                                        {currencies.map((currency) => (
-                                                            <div
-                                                                key={currency.code}
-                                                                className="flex items-center justify-between px-3 py-2 hover:bg-muted cursor-pointer text-sm"
-                                                                onClick={() => setSelectedCurrency(currency.code)}
-                                                            >
-                                                                <span className="text-foreground">
-                                                                    {currency.code} - {currency.name} ({currency.symbol})
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                                <Input
-                                                    type="number"
-                                                    value={startCurrency}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        if (startCurrency === "0" && val.length > 1 && val.startsWith("0")) {
-                                                            setStartCurrency(val.substring(1));
-                                                        } else {
-                                                            setStartCurrency(val || "0");
-                                                        }
-                                                    }}
-                                                    className="flex-1 h-7 border-0 bg-transparent px-0 text-[11px] focus-visible:ring-0 focus-visible:ring-offset-0"
-                                                    data-testid="start-currency-input"
-                                                />
-                                                <div
-                                                    className="flex items-center gap-0.5 ml-1"
-                                                    data-testid="start-currency-controls"
-                                                >
-                                                    <Button
-                                                        type="button"
-                                                        size="icon"
-                                                        variant="outline"
-                                                        className="w-5 h-5 rounded-full border-gray-200 text-[10px] leading-none"
-                                                        onClick={() =>
-                                                            setStartCurrency((n) => String(Math.max(0, (Number(n) || 0) + 1)))
-                                                        }
-                                                        data-testid="start-currency-increase"
-                                                    >
-                                                        +
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="icon"
-                                                        variant="outline"
-                                                        className="w-5 h-5 rounded-full border-gray-200 text-[10px] leading-none"
-                                                        onClick={() =>
-                                                            setStartCurrency((n) => String(Math.max(0, (Number(n) || 0) - 1)))
-                                                        }
-                                                        data-testid="start-currency-decrease"
-                                                    >
-                                                        −
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Arrow */}
-                                        <div
-                                            className="text-base text-primary font-semibold"
-                                            data-testid="currency-range-arrow"
-                                        >
-                                            →
-                                        </div>
-
-                                        {/* Target Amount */}
-                                        <div className="flex-1" data-testid="target-currency-section">
-                                            <p
-                                                className="text-[10px] font-medium text-muted-foreground mb-1"
-                                                data-testid="target-currency-label"
-                                            >
-                                                Target Amount
-                                            </p>
-                                            <div
-                                                className="flex items-center rounded-full bg-background border border-border px-2.5 py-1 shadow-sm"
-                                                data-testid="target-currency-input-group"
-                                            >
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <div
-                                                            className="w-5 h-5 rounded-full bg-muted text-foreground flex items-center justify-center text-[10px] mr-1.5 cursor-pointer hover:bg-muted/80 transition-colors"
-                                                            data-testid="target-currency-badge"
-                                                        >
-                                                            {currencies.find(c => c.code === selectedCurrency)?.symbol || "$"}
-                                                        </div>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="start" className="w-[300px] max-h-[400px] overflow-y-auto bg-popover border-border">
-                                                        <div className="p-2 border-b text-xs font-medium text-muted-foreground border-border">Currency</div>
-                                                        {currencies.map((currency) => (
-                                                            <div
-                                                                key={currency.code}
-                                                                className="flex items-center justify-between px-3 py-2 hover:bg-muted cursor-pointer text-sm"
-                                                                onClick={() => setSelectedCurrency(currency.code)}
-                                                            >
-                                                                <span className="text-foreground">
-                                                                    {currency.code} - {currency.name} ({currency.symbol})
-                                                                </span>
-                                                            </div>
-                                                        ))}
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                                <Input
-                                                    type="number"
-                                                    value={targetCurrency}
-                                                    onChange={(e) => {
-                                                        const val = e.target.value;
-                                                        if (targetCurrency === "0" && val.length > 1 && val.startsWith("0")) {
-                                                            setTargetCurrency(val.substring(1));
-                                                        } else {
-                                                            setTargetCurrency(val || "0");
-                                                        }
-                                                    }}
-                                                    className="flex-1 h-7 border-0 bg-transparent px-0 text-[11px] focus-visible:ring-0 focus-visible:ring-offset-0"
-                                                    data-testid="target-currency-input"
-                                                />
-                                                <div
-                                                    className="flex items-center gap-0.5 ml-1"
-                                                    data-testid="target-currency-controls"
-                                                >
-                                                    <Button
-                                                        type="button"
-                                                        size="icon"
-                                                        variant="outline"
-                                                        className="w-5 h-5 rounded-full border-border text-[10px] leading-none"
-                                                        onClick={() =>
-                                                            setTargetCurrency((n) => String(Math.max(0, (Number(n) || 0) + 1)))
-                                                        }
-                                                        data-testid="target-currency-increase"
-                                                    >
-                                                        +
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        size="icon"
-                                                        variant="outline"
-                                                        className="w-5 h-5 rounded-full border-border text-[10px] leading-none"
-                                                        onClick={() =>
-                                                            setTargetCurrency((n) => String(Math.max(0, (Number(n) || 0) - 1)))
-                                                        }
-                                                        data-testid="target-currency-decrease"
-                                                    >
-                                                        −
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {selectedType === "projects" && (
-                                    <div className="space-y-3 mt-4">
-                                        <DropdownMenu
-                                            open={isDropdownOpen}
-                                            onOpenChange={setIsDropdownOpen}
-                                            modal={false}
-                                        >
-                                            <DropdownMenuTrigger asChild>
-                                                <button
-                                                    type="button"
-                                                    className="w-full flex items-center justify-between px-4 py-2.5 text-sm border border-border rounded-lg hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary transition-colors"
-                                                >
-                                                    <span className="text-foreground/80">
-                                                        {selectedProjects.length + selectedMilestones.length + selectedTasks.length > 0
-                                                            ? `${selectedProjects.length + selectedMilestones.length + selectedTasks.length} item(s) selected`
-                                                            : "Select Project, Milestone and/or Tasks"}
-                                                    </span>
-                                                    <ChevronDown
-                                                        className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''
-                                                            }`}
-                                                    />
-                                                </button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent
-                                                align="start"
-                                                className="w-[560px] p-0  border-border"
-                                                style={{ maxHeight: '500px', display: 'flex', flexDirection: 'column' }}
-                                                onInteractOutside={(e) => {
-                                                    e.preventDefault();
-                                                }}
-                                            >
-                                                <div onClick={(e) => e.stopPropagation()}>
-                                                    {/* Search Bar */}
-                                                    <div className="px-4 py-3 border-b border-border">
-                                                        <div className="relative">
-                                                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                                            <Input
-                                                                type="text"
-                                                                placeholder="Search for item..."
-                                                                value={searchQuery}
-                                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                                className="pl-10 h-9 text-sm bg-background border-border focus-visible:ring-primary"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                            />
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Tabs */}
-                                                    <div className="px-4 pt-3 pb-2 border-b border-border flex gap-6 ">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setActiveTab("project");
-                                                            }}
-                                                            className={cn(
-                                                                "pb-2 text-sm font-medium transition-colors relative",
-                                                                activeTab === "project"
-                                                                    ? "text-foreground"
-                                                                    : "text-muted-foreground hover:text-foreground"
-                                                            )}
-                                                        >
-                                                            Projects & Tasks
-                                                            {activeTab === "project" && (
-                                                                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary" />
-                                                            )}
-                                                        </button>
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setActiveTab("milestones");
-                                                            }}
-                                                            className={cn(
-                                                                "pb-2 text-sm font-medium transition-colors relative",
-                                                                activeTab === "milestones"
-                                                                    ? "text-foreground"
-                                                                    : "text-muted-foreground hover:text-foreground"
-                                                            )}
-                                                        >
-                                                            Milestones
-                                                            {activeTab === "milestones" && (
-                                                                <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary" />
-                                                            )}
-                                                        </button>
-                                                    </div>
-
-                                                    {/* Tab Content */}
-                                                    <div className="overflow-y-auto max-h-[320px]">
-                                                        {activeTab === "project" && (
-                                                            <div>
-                                                                <div className="flex items-center justify-between bg-muted px-4 py-2 text-xs font-medium text-muted-foreground border-b border-border sticky top-0 z-10">
-                                                                    <span>Item</span>
-                                                                    <span>Owner</span>
-                                                                </div>
-                                                                <div className="divide-y divide-border">
-                                                                    {projects
-                                                                        .filter(project =>
-                                                                            project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                                                                            tasks.some(task =>
-                                                                                task.projectId === project.id &&
-                                                                                task.name.toLowerCase().includes(searchQuery.toLowerCase())
-                                                                            )
-                                                                        )
-                                                                        .map((project) => {
-                                                                            const isExpanded = expandedProjects.has(project.id || "");
-                                                                            const projectTasks = tasks.filter(t => t.projectId === project.id);
-
-                                                                            const projectMembers = getMembersByProject(project.id || "");
-                                                                            const leaderId = project.leaders?.[0] || project.projectLeader;
-                                                                            const leader = projectMembers.find(m => m.userId === leaderId);
-                                                                            const projectOwnerName = leader?.name || "Unassigned";
-
-                                                                            return (
-                                                                                <div key={project.id} className="flex flex-col">
-                                                                                    <div
-                                                                                        className="flex items-center justify-between px-4 py-2.5 hover:bg-muted cursor-pointer group transition-colors"
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            if (projectTasks.length > 0) {
-                                                                                                toggleProjectExpand(project.id || "");
-                                                                                            }
-                                                                                        }}
-                                                                                    >
-                                                                                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                                            <div className="w-4 h-4 flex items-center justify-center">
-                                                                                                {projectTasks.length > 0 && (
-                                                                                                    <ChevronDown
-                                                                                                        size={14}
-                                                                                                        className={cn(
-                                                                                                            "text-muted-foreground transition-transform duration-200",
-                                                                                                            !isExpanded && "-rotate-90"
-                                                                                                        )}
-                                                                                                    />
-                                                                                                )}
-                                                                                            </div>
-                                                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                                                <div
-                                                                                                    className={cn(
-                                                                                                        "w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors",
-                                                                                                        selectedProjects.includes(project.id || "")
-                                                                                                            ? "border-primary bg-primary"
-                                                                                                            : "border-border hover:border-primary/50"
-                                                                                                    )}
-                                                                                                    onClick={(e) => {
-                                                                                                        e.stopPropagation();
-                                                                                                        if (project.id) {
-                                                                                                            const isCurrentlySelected = selectedProjects.includes(project.id);
-                                                                                                            const projectTaskIds = projectTasks.map(t => t.id).filter(Boolean) as string[];
-
-                                                                                                            if (isCurrentlySelected) {
-                                                                                                                // 1. Unselect project
-                                                                                                                setSelectedProjects(prev => prev.filter(id => id !== project.id));
-                                                                                                                // 2. Unselect all tasks from this project
-                                                                                                                setSelectedTasks(prev => prev.filter(id => !projectTaskIds.includes(id)));
-                                                                                                            } else {
-                                                                                                                // 1. Select project
-                                                                                                                setSelectedProjects(prev => [...prev, project.id!]);
-                                                                                                                // 2. Select all tasks from this project (avoiding duplicates)
-                                                                                                                setSelectedTasks(prev => {
-                                                                                                                    const otherTasks = prev.filter(id => !projectTaskIds.includes(id));
-                                                                                                                    return [...otherTasks, ...projectTaskIds];
-                                                                                                                });
-                                                                                                                if (!targetName) setTargetName(project.name);
-                                                                                                            }
-                                                                                                        }
-                                                                                                    }}
-                                                                                                >
-                                                                                                    {selectedProjects.includes(project.id || "") && (
-                                                                                                        <Check size={10} className="text-primary-foreground" />
-                                                                                                    )}
-                                                                                                </div>
-                                                                                                <span className="text-sm text-foreground font-medium truncate">
-                                                                                                    {project.name}
-                                                                                                </span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div className="flex items-center ml-2">
-                                                                                            <div
-                                                                                                title={projectOwnerName}
-                                                                                                className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-[10px] font-medium text-muted-foreground"
-                                                                                            >
-                                                                                                {projectOwnerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    {isExpanded && projectTasks.length > 0 && (
-                                                                                        <div className="bg-muted/30">
-                                                                                            {projectTasks
-                                                                                                .filter(task => task.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                                                                                .map((task) => {
-                                                                                                    const assignee = projectMembers.find(m => m.userId === task.assignee);
-                                                                                                    const assigneeName = assignee?.name || "Unassigned";
-
-                                                                                                    return (
-                                                                                                        <div
-                                                                                                            key={task.id}
-                                                                                                            className="flex items-center justify-between pl-10 pr-4 py-2 hover:bg-muted cursor-pointer group border-t border-border"
-                                                                                                            onClick={(e) => {
-                                                                                                                e.stopPropagation();
-                                                                                                                if (task.id) {
-                                                                                                                    setSelectedTasks(prev =>
-                                                                                                                        prev.includes(task.id!)
-                                                                                                                            ? prev.filter(id => id !== task.id)
-                                                                                                                            : [...prev, task.id!]
-                                                                                                                    );
-                                                                                                                    if (!targetName) setTargetName(task.name);
-                                                                                                                }
-                                                                                                            }}
-                                                                                                        >
-                                                                                                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                                                                <div
-                                                                                                                    className={cn(
-                                                                                                                        "w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors",
-                                                                                                                        selectedTasks.includes(task.id || "")
-                                                                                                                            ? "border-primary bg-primary"
-                                                                                                                            : "border-border hover:border-primary/50"
-                                                                                                                    )}
-                                                                                                                >
-                                                                                                                    {selectedTasks.includes(task.id || "") && (
-                                                                                                                        <Check size={10} className="text-primary-foreground" />
-                                                                                                                    )}
-                                                                                                                </div>
-                                                                                                                <span className="text-sm text-foreground/80 truncate">
-                                                                                                                    {task.name}
-                                                                                                                </span>
-                                                                                                            </div>
-                                                                                                            <div className="flex items-center ml-2">
-                                                                                                                <div
-                                                                                                                    title={assigneeName}
-                                                                                                                    className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-medium text-muted-foreground"
-                                                                                                                >
-                                                                                                                    {assigneeName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                                                                                                                </div>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    );
-                                                                                                })}
-                                                                                        </div>
-                                                                                    )}
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                </div>
-                                                            </div>
-                                                        )}
-
-                                                        {activeTab === "milestones" && (
-                                                            <div>
-                                                                <div className="flex items-center justify-between bg-muted px-4 py-2 text-xs font-medium text-muted-foreground border-b border-border sticky top-0 z-10">
-                                                                    <span>Milestone</span>
-                                                                    <span>Project / Owner</span>
-                                                                </div>
-                                                                <div className="divide-y divide-border">
-                                                                    {dummyMilestones
-                                                                        .filter(mile => mile.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                                                                        .map((mile) => (
-                                                                            <div
-                                                                                key={mile.id}
-                                                                                className="flex items-center justify-between px-4 py-2.5 hover:bg-muted cursor-pointer transition-colors"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    setSelectedMilestones(prev =>
-                                                                                        prev.includes(mile.id)
-                                                                                            ? prev.filter(id => id !== mile.id)
-                                                                                            : [...prev, mile.id]
-                                                                                    );
-                                                                                    if (!targetName) setTargetName(mile.name);
-                                                                                }}
-                                                                            >
-                                                                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                                                    <div
-                                                                                        className={cn(
-                                                                                            "w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 transition-colors",
-                                                                                            selectedMilestones.includes(mile.id)
-                                                                                                ? "border-primary bg-primary"
-                                                                                                : "border-border hover:border-primary/50"
-                                                                                        )}
-                                                                                    >
-                                                                                        {selectedMilestones.includes(mile.id) && (
-                                                                                            <Check size={10} className="text-primary-foreground" />
-                                                                                        )}
-                                                                                    </div>
-                                                                                    <span className="text-sm text-foreground font-medium truncate">
-                                                                                        {mile.name}
-                                                                                    </span>
-                                                                                </div>
-                                                                                <div className="text-xs text-muted-foreground ml-2 min-w-0 truncate hidden sm:block">
-                                                                                    {mile.project} • {mile.owner}
-                                                                                </div>
-                                                                            </div>
-                                                                        ))}
-                                                                </div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-
-                                                    {/* Footer Buttons */}
-                                                    <div className="border-t border-border p-3 flex gap-2 bg-popover sticky bottom-0">
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            className="flex-1 border-border"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setIsDropdownOpen(false);
-                                                                setSearchQuery("");
-                                                            }}
-                                                        >
-                                                            Back
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            className="flex-1 bg-primary hover:opacity-90 text-primary-foreground"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setIsDropdownOpen(false);
-                                                                setSearchQuery("");
-                                                            }}
-                                                        >
-                                                            Next
-                                                        </Button>
-                                                    </div>
-                                                </div>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-
-                                        {/* Info text */}
-                                        <p className="text-xs text-muted-foreground mt-2">
-                                            Select projects, milestones or tasks to track their completion as targets
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <div
-                    className="flex justify-end gap-3 px-6 py-4 border-t border-border bg-muted/50 rounded-b-2xl"
-                    data-testid="modal-footer"
-                >
-                    <Button
-                        variant="outline"
-                        onClick={onClose}
-                        data-testid="modal-cancel-button"
-                        className="hover:bg-primary hover:text-primary-foreground border-border"
-                    >
-                        Cancel
-                    </Button>
-                    <Button
-                        onClick={handleSave}
-                        disabled={!isFormValid}
-                        data-testid="modal-save-button"
-                        className={cn(
-                            "h-auto text-sm font-medium rounded-lg shadow-sm transition-all",
-                            isFormValid
-                                ? "bg-primary text-primary-foreground hover:opacity-90"
-                                : "bg-muted text-muted-foreground cursor-not-allowed"
-                        )}
-                    >
-                        {targetToEdit ? "Update Target" : "Create Target"}
-                    </Button>
-                </div>
-            </div>
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent showCloseButton={false} className="sm:max-w-4xl w-full p-0 overflow-hidden bg-white border border-[#E5E7EB] rounded-2xl shadow-xl flex flex-col">
+        {/* ==========================================
+            Header Panel (Sleek and clean exactly like image)
+            ========================================== */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+          <div className="flex items-center space-x-3.5">
+            <button
+              onClick={onClose}
+              className="p-1 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-900"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </button>
+            <h2 className="text-base font-bold text-[#001F3F] tracking-tight truncate max-w-[500px]">
+              {goalTitle}
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-600"
+          >
+            <X className="h-4.5 w-4.5" />
+          </button>
         </div>
-    );
+
+        {/* ==========================================
+            Main Scrollable Body
+            ========================================== */}
+        <div className="flex-1 overflow-y-auto p-6 bg-[#FAFBFC] space-y-5 max-h-[72vh] scrollbar-thin">
+          
+          {/* 1. Target Name & Date Picker Row Box (Sleek gray background container) */}
+          <div className="bg-[#F8FAFC] border border-[#F1F5F9] rounded-2xl p-5 shadow-2xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* Target name input */}
+              <div className="flex flex-col space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider font-bold text-[#64748B] select-none">
+                  Target name
+                </label>
+                <Input
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder="e.g. Target name 1"
+                  className="h-10 bg-white border-[#E2E8F0] hover:border-slate-350 focus:border-[#001F3F] text-[13px] text-slate-800 rounded-xl transition-all"
+                />
+              </div>
+
+              {/* Target End Date Picker */}
+              <div className="flex flex-col space-y-1.5">
+                <label className="text-[10px] uppercase tracking-wider font-bold text-[#64748B] select-none">
+                  Target End Date
+                </label>
+                <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="h-10 bg-white border-[#E2E8F0] hover:bg-slate-50 text-left text-[13px] text-slate-700 hover:text-slate-900 rounded-xl flex items-center justify-between font-normal shadow-2xs px-3.5 transition-all"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <CalendarIcon className="h-4 w-4 text-slate-400 shrink-0" />
+                        <span className={endDate ? "text-slate-800 font-medium" : "text-slate-400"}>
+                          {endDate ? format(endDate, "PPP") : "Set a Target Date"}
+                        </span>
+                      </div>
+                      <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="p-0 bg-white border border-[#E5E7EB] rounded-2xl shadow-xl z-50">
+                    <Calendar
+                      mode="single"
+                      selected={endDate}
+                      onSelect={(date) => {
+                        setEndDate(date);
+                        setDatePopoverOpen(false);
+                      }}
+                      initialFocus
+                      className="rounded-2xl border-0 p-3 bg-white text-slate-900"
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          </div>
+
+          {/* 2. Target Description (Thick navy vertical accent bar left side) */}
+          <div className="border border-[#E5E7EB] border-l-4 border-l-[#001F3F] bg-white rounded-r-2xl rounded-l-none p-5 shadow-2xs">
+            <div className="flex flex-col space-y-2.5">
+              <label className="text-sm font-semibold text-slate-900 leading-none">
+                Target description
+              </label>
+              
+              <div className="border border-[#E2E8F0] rounded-xl overflow-hidden flex flex-col bg-white min-h-[160px] transition-all">
+                <ProseMirrorEditor
+                  initialContent={description}
+                  mentionableMembers={mentionableMembers}
+                  placeholder="Add description..."
+                  className="w-full h-full min-h-[110px]"
+                  editable={true}
+                  onBlur={(newDesc: string) => {
+                    setDescription(newDesc);
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 3. Target Owner (Thick navy vertical accent bar left side) */}
+          <div className="border border-[#E5E7EB] border-l-4 border-l-[#001F3F] bg-white rounded-r-2xl rounded-l-none p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <h3 className="text-sm font-semibold text-slate-900 leading-tight">Target owner</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Select an owner for the target</p>
+            </div>
+
+            <div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    type="button"
+                    className="flex items-center space-x-3 px-3.5 py-2 rounded-xl border border-[#E2E8F0] bg-white hover:bg-slate-50 transition-all text-left focus:outline-none min-w-[240px] justify-between shadow-2xs"
+                  >
+                    {owner ? (
+                      <div className="flex items-center space-x-2.5">
+                        <Avatar className="h-6.5 w-6.5">
+                          {owner.profilePicture && (
+                            <AvatarImage src={owner.profilePicture} alt={owner.name} />
+                          )}
+                          <AvatarFallback className="text-[10px] font-bold bg-[#001F3F] text-white">
+                            {owner.name?.charAt(0)?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="text-[13px] font-semibold text-slate-800 leading-none">{owner.name}</span>
+                          <span className="text-[10px] text-slate-400 font-normal leading-none mt-1 truncate max-w-[140px]">
+                            {owner.email}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2 text-slate-400 text-xs">
+                        <div className="w-6.5 h-6.5 rounded-full border border-dashed border-slate-300 flex items-center justify-center">
+                          <span className="text-[10px] font-bold">?</span>
+                        </div>
+                        <span>Select Owner</span>
+                      </div>
+                    )}
+                    <ChevronDown className="h-3.5 w-3.5 text-slate-400 shrink-0 ml-2" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[260px] bg-white border border-[#E5E7EB] shadow-lg rounded-2xl p-1.5 z-50">
+                  <div className="text-[9px] font-bold text-[#64748B] uppercase tracking-wider px-2.5 py-2 select-none">
+                    Select team member
+                  </div>
+                  <div className="max-h-[220px] overflow-y-auto">
+                    {workspaceMembers.map((member) => (
+                      <DropdownMenuItem
+                        key={member.userId}
+                        onClick={() => setOwner(member)}
+                        className="flex items-center space-x-2.5 p-2 hover:bg-slate-50 cursor-pointer rounded-xl transition-colors focus:bg-slate-50 focus:text-inherit"
+                      >
+                        <Avatar className="h-6.5 w-6.5">
+                          {member.profilePicture && (
+                            <AvatarImage src={member.profilePicture} alt={member.name} />
+                          )}
+                          <AvatarFallback className="text-[10px] font-bold bg-[#001F3F] text-white">
+                            {member.name?.charAt(0)?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex flex-col">
+                          <span className="text-[12.5px] font-semibold text-slate-800 leading-none">{member.name}</span>
+                          <span className="text-[9.5px] text-slate-400 font-normal mt-0.5 leading-none">{member.email}</span>
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                    {workspaceMembers.length === 0 && (
+                      <div className="text-xs text-slate-400 italic text-center py-4">No workspace members found</div>
+                    )}
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* 4. Type of Target Panel (Thick navy vertical accent bar left side + Colorful Cards + Dynamic Subpanels) */}
+          <div className="border border-[#E5E7EB] border-l-4 border-l-[#001F3F] bg-white rounded-r-2xl rounded-l-none p-5 shadow-2xs space-y-5">
+            <div className="flex flex-col">
+              <h3 className="text-sm font-semibold text-slate-900 leading-tight font-sans">Type of Target</h3>
+              <p className="text-xs text-slate-400 mt-0.5">How do you want to measure this result?</p>
+            </div>
+
+            {/* Target Type Cards Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Card 1: Number */}
+              <button
+                type="button"
+                onClick={() => setTargetType("number")}
+                className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all ${
+                  targetType === "number"
+                    ? "bg-[#EBF3FF] border-[#9BB2DC] shadow-3xs"
+                    : "bg-white border-[#E5E7EB] hover:bg-slate-50"
+                }`}
+              >
+                <div className={`p-2 rounded-lg mb-2.5 transition-colors ${
+                  targetType === "number" ? "bg-[#9BB2DC]/20 text-[#2F68C4]" : "bg-slate-100 text-slate-400"
+                }`}>
+                  <Hash className="h-5 w-5" />
+                </div>
+                <span className={`text-[12.5px] font-bold leading-none ${
+                  targetType === "number" ? "text-[#2F68C4]" : "text-slate-800"
+                }`}>
+                  Number
+                </span>
+                <span className={`text-[10px] mt-1.5 leading-tight ${
+                  targetType === "number" ? "text-[#2F68C4]/80 font-medium" : "text-slate-400"
+                }`}>
+                  Any Number like 1 or 2
+                </span>
+              </button>
+
+              {/* Card 2: True / False */}
+              <button
+                type="button"
+                onClick={() => setTargetType("boolean")}
+                className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all ${
+                  targetType === "boolean"
+                    ? "bg-[#FFF4EC] border-[#FF9500] shadow-3xs"
+                    : "bg-white border-[#E5E7EB] hover:bg-slate-50"
+                }`}
+              >
+                <div className={`p-2 rounded-lg mb-2.5 transition-colors ${
+                  targetType === "boolean" ? "bg-[#FF9500]/15 text-[#D86C00]" : "bg-slate-100 text-slate-400"
+                }`}>
+                  <ToggleLeft className="h-5 w-5" />
+                </div>
+                <span className={`text-[12.5px] font-bold leading-none ${
+                  targetType === "boolean" ? "text-[#D86C00]" : "text-slate-800"
+                }`}>
+                  True / False
+                </span>
+                <span className={`text-[10px] mt-1.5 leading-tight ${
+                  targetType === "boolean" ? "text-[#D86C00]/85 font-medium" : "text-slate-400"
+                }`}>
+                  Done or Not Done
+                </span>
+              </button>
+
+              {/* Card 3: Currency */}
+              <button
+                type="button"
+                onClick={() => setTargetType("currency")}
+                className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all ${
+                  targetType === "currency"
+                    ? "bg-[#EEFBF0] border-[#34C759] shadow-3xs"
+                    : "bg-white border-[#E5E7EB] hover:bg-slate-50"
+                }`}
+              >
+                <div className={`p-2 rounded-lg mb-2.5 transition-colors ${
+                  targetType === "currency" ? "bg-[#34C759]/15 text-[#1E8A37]" : "bg-slate-100 text-slate-400"
+                }`}>
+                  <DollarSign className="h-5 w-5" />
+                </div>
+                <span className={`text-[12.5px] font-bold leading-none ${
+                  targetType === "currency" ? "text-[#1E8A37]" : "text-slate-800"
+                }`}>
+                  Currency
+                </span>
+                <span className={`text-[10px] mt-1.5 leading-tight ${
+                  targetType === "currency" ? "text-[#1E8A37]/85 font-medium" : "text-slate-400"
+                }`}>
+                  Show me the Money
+                </span>
+              </button>
+
+              {/* Card 4: Projects (task) */}
+              <button
+                type="button"
+                onClick={() => setTargetType("task")}
+                className={`flex flex-col items-center justify-center p-4 rounded-xl border text-center transition-all ${
+                  targetType === "task"
+                    ? "bg-[#FAF5EF] border-[#A2845E] shadow-3xs"
+                    : "bg-white border-[#E5E7EB] hover:bg-slate-50"
+                }`}
+              >
+                <div className={`p-2 rounded-lg mb-2.5 transition-colors ${
+                  targetType === "task" ? "bg-[#A2845E]/15 text-[#6E5336]" : "bg-slate-100 text-slate-400"
+                }`}>
+                  <Briefcase className="h-5 w-5" />
+                </div>
+                <span className={`text-[12.5px] font-bold leading-none ${
+                  targetType === "task" ? "text-[#6E5336]" : "text-slate-800"
+                }`}>
+                  Projects
+                </span>
+                <span className={`text-[10px] mt-1.5 leading-tight ${
+                  targetType === "task" ? "text-[#6E5336]/85 font-medium" : "text-slate-400"
+                }`}>
+                  Track Completion of Tasks
+                </span>
+              </button>
+            </div>
+
+            {/* Dynamic Type-specific Sub-panels */}
+            <div className="pt-2 border-t border-slate-100">
+              
+              {/* SUBPANEL 1: NUMBER TYPE */}
+              {targetType === "number" && (
+                <div className="space-y-4">
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    Configure Number Parameters
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-4 rounded-xl border border-slate-150">
+                    {/* Start Number value */}
+                    <div className="flex flex-col space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none">
+                        Starting Number
+                      </span>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setNumberStart(prev => Math.max(0, prev - 1))}
+                          className="h-9 w-9 bg-white border-[#E2E8F0] hover:bg-slate-100 text-slate-600 rounded-lg shadow-3xs"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </Button>
+                        <Input
+                          type="number"
+                          value={numberStart}
+                          onChange={(e) => setNumberStart(parseInt(e.target.value) || 0)}
+                          className="h-9 text-center bg-white border-[#E2E8F0] text-sm text-slate-800 font-bold rounded-lg focus:border-[#9BB2DC]"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setNumberStart(prev => prev + 1)}
+                          className="h-9 w-9 bg-white border-[#E2E8F0] hover:bg-slate-100 text-slate-600 rounded-lg shadow-3xs"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Target/End Number value */}
+                    <div className="flex flex-col space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none">
+                        Target/End Number
+                      </span>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setNumberEnd(prev => Math.max(numberStart, prev - 1))}
+                          className="h-9 w-9 bg-white border-[#E2E8F0] hover:bg-slate-100 text-slate-600 rounded-lg shadow-3xs"
+                        >
+                          <Minus className="h-3.5 w-3.5" />
+                        </Button>
+                        <Input
+                          type="number"
+                          value={numberEnd}
+                          onChange={(e) => setNumberEnd(parseInt(e.target.value) || 0)}
+                          className="h-9 text-center bg-white border-[#E2E8F0] text-sm text-slate-800 font-bold rounded-lg focus:border-[#9BB2DC]"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => setNumberEnd(prev => prev + 1)}
+                          className="h-9 w-9 bg-white border-[#E2E8F0] hover:bg-slate-100 text-slate-600 rounded-lg shadow-3xs"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-[11px] font-medium text-slate-400 select-none">
+                    Target range: <span className="text-slate-700 font-bold">{numberStart}</span> to{" "}
+                    <span className="text-slate-700 font-bold">{numberEnd}</span> (Increment/Decrement steps of 1)
+                  </div>
+                </div>
+              )}
+
+              {/* SUBPANEL 2: CURRENCY TYPE */}
+              {targetType === "currency" && (
+                <div className="space-y-4">
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    Configure Currency Parameters
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-150">
+                    {/* Currency Unit Selection */}
+                    <div className="flex flex-col space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none">
+                        Currency Unit
+                      </span>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className="h-9 bg-white border-[#E2E8F0] hover:bg-slate-100 text-[12.5px] text-slate-800 font-bold rounded-lg flex items-center justify-between shadow-3xs"
+                          >
+                            <span>
+                              {CURRENCIES.find(c => c.code === currencyUnit)?.symbol} ({currencyUnit})
+                            </span>
+                            <ChevronDown className="h-3.5 w-3.5 text-slate-400 ml-1.5 shrink-0" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-[180px] bg-white border border-[#E5E7EB] rounded-2xl p-1.5 z-50">
+                          {CURRENCIES.map((curr) => (
+                            <DropdownMenuItem
+                              key={curr.code}
+                              onClick={() => setCurrencyUnit(curr.code)}
+                              className="text-[12px] p-2 hover:bg-slate-50 rounded-xl font-medium cursor-pointer"
+                            >
+                              <span className="font-bold text-slate-800 mr-1.5">{curr.symbol}</span>
+                              <span className="text-slate-600">{curr.code}</span>
+                              <span className="text-slate-400 text-[10px] ml-auto">{curr.name}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    {/* Start Currency Value */}
+                    <div className="flex flex-col space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none">
+                        Starting Value
+                      </span>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-2.5 text-xs font-bold text-slate-400 select-none">
+                          {CURRENCIES.find(c => c.code === currencyUnit)?.symbol}
+                        </span>
+                        <Input
+                          type="number"
+                          value={currencyStart}
+                          onChange={(e) => setCurrencyStart(parseInt(e.target.value) || 0)}
+                          className="h-9 pl-6 bg-white border-[#E2E8F0] text-xs font-bold text-slate-800 rounded-lg focus:border-[#34C759]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* End Currency Value */}
+                    <div className="flex flex-col space-y-1.5">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider select-none">
+                        Target/End Value
+                      </span>
+                      <div className="relative">
+                        <span className="absolute left-2.5 top-2.5 text-xs font-bold text-slate-400 select-none">
+                          {CURRENCIES.find(c => c.code === currencyUnit)?.symbol}
+                        </span>
+                        <Input
+                          type="number"
+                          value={currencyEnd}
+                          onChange={(e) => setCurrencyEnd(parseInt(e.target.value) || 0)}
+                          className="h-9 pl-6 bg-white border-[#E2E8F0] text-xs font-bold text-slate-800 rounded-lg focus:border-[#34C759]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-[11px] font-medium text-slate-400 select-none">
+                    Target range: <span className="text-slate-700 font-bold">{CURRENCIES.find(c => c.code === currencyUnit)?.symbol}{currencyStart}</span> to{" "}
+                    <span className="text-slate-700 font-bold">{CURRENCIES.find(c => c.code === currencyUnit)?.symbol}{currencyEnd}</span> in{" "}
+                    <span className="text-slate-700 font-semibold">{CURRENCIES.find(c => c.code === currencyUnit)?.name}</span>.
+                  </div>
+                </div>
+              )}
+
+              {/* SUBPANEL 3: TRUE / FALSE TYPE */}
+              {targetType === "boolean" && (
+                <div className="space-y-2 bg-[#FAFCFE] p-4 rounded-xl border border-sky-100 flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-700 leading-none">Binary Status Tracking</span>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      No numeric configuration needed. Target progress completes when status changes to completed/finished.
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-1 bg-[#FF9500]/10 text-[#FF9500] rounded-md select-none uppercase tracking-wide">
+                    TRUE/FALSE
+                  </span>
+                </div>
+              )}
+
+              {/* SUBPANEL 4: PROJECTS / TASKS SELECTOR TYPE */}
+              {targetType === "task" && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      Select Tasks to Link to Target
+                    </div>
+                    
+                    {/* Search Field */}
+                    <div className="relative w-48.5">
+                      <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400 shrink-0" />
+                      <Input
+                        value={taskSearchQuery}
+                        onChange={(e) => setTaskSearchQuery(e.target.value)}
+                        placeholder="Search tasks..."
+                        className="h-8.5 pl-8 bg-white border-[#E2E8F0] text-xs rounded-lg w-full"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Projects checklist */}
+                  <div className="max-h-[300px] overflow-y-auto border border-[#E2E8F0] rounded-xl p-3 bg-[#FCFDFE] space-y-2.5 scrollbar-thin">
+                    {projects.map((project) => {
+                      const projectTasks = tasks.filter(
+                        (t) => t.projectId === project.id && 
+                        t.name.toLowerCase().includes(taskSearchQuery.toLowerCase())
+                      );
+                      const isExpanded = expandedProjects.has(project.id || "");
+                      const selectedCount = projectTasks.filter((t) => selectedTaskIds.includes(t.id)).length;
+                      
+                      const isAllSelected = projectTasks.length > 0 && selectedCount === projectTasks.length;
+                      const isPartiallySelected = selectedCount > 0 && !isAllSelected;
+
+                      return (
+                        <div key={project.id} className="border border-slate-100 rounded-lg bg-white shadow-3xs overflow-hidden">
+                          {/* Project Header Item */}
+                          <div className="flex items-center justify-between p-2.5 bg-slate-50/50 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
+                               onClick={() => toggleProjectExpand(project.id || "")}>
+                            <div className="flex items-center space-x-2 flex-1 min-w-0">
+                              <ChevronRight className={`h-4 w-4 text-slate-400 shrink-0 transition-transform ${isExpanded ? "rotate-90" : ""}`} />
+                              <Folder className="h-4 w-4 text-[#A2845E] shrink-0" />
+                              <span className="text-[12.5px] font-semibold text-slate-800 truncate">{project.name}</span>
+                              <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full select-none shrink-0">
+                                {projectTasks.length} tasks
+                              </span>
+                            </div>
+                            
+                            {/* Project-level select all checkbox */}
+                            {projectTasks.length > 0 && (
+                              <div className="flex items-center space-x-1.5" onClick={(e) => e.stopPropagation()}>
+                                <span className="text-[9.5px] font-bold text-slate-400 select-none uppercase tracking-wide mr-1">
+                                  {isAllSelected ? "Deselect" : "Select All"}
+                                </span>
+                                <Checkbox
+                                  checked={isAllSelected}
+                                  className="h-4 w-4 data-[state=checked]:bg-[#A2845E] data-[state=checked]:border-[#A2845E]"
+                                  ref={(ref) => {
+                                    if (ref) {
+                                      (ref as any).indeterminate = isPartiallySelected;
+                                    }
+                                  }}
+                                  onCheckedChange={(checked) => {
+                                    handleSelectAllProjectTasks(project.id || "", projectTasks, !!checked);
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Project tasks list */}
+                          {isExpanded && (
+                            <div className="p-2 space-y-1.5 pl-6 bg-white border-t border-slate-50">
+                              {projectTasks.map((task) => {
+                                const isLinked = selectedTaskIds.includes(task.id);
+                                return (
+                                  <div
+                                    key={task.id}
+                                    onClick={() => handleToggleTaskSelect(task.id)}
+                                    className="flex items-center justify-between p-1.8 hover:bg-slate-50/70 rounded-lg cursor-pointer transition-colors"
+                                  >
+                                    <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                                      <div className={`w-2 h-2 rounded-full shrink-0 ${
+                                        task.status === "completed" ? "bg-emerald-500" : "bg-slate-300"
+                                      }`} />
+                                      <span className="text-xs text-slate-700 truncate">{task.name}</span>
+                                    </div>
+                                    <Checkbox
+                                      checked={isLinked}
+                                      className="h-4 w-4 data-[state=checked]:bg-[#A2845E] data-[state=checked]:border-[#A2845E]"
+                                      onCheckedChange={() => handleToggleTaskSelect(task.id)}
+                                    />
+                                  </div>
+                                );
+                              })}
+                              {projectTasks.length === 0 && (
+                                <div className="text-[11px] text-slate-450 italic py-2">No tasks available matching search</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {projects.length === 0 && (
+                      <div className="text-xs text-slate-400 italic text-center py-6">No projects found in this workspace</div>
+                    )}
+                  </div>
+                  
+                  <div className="text-xs font-semibold text-[#A2845E] select-none flex items-center space-x-1">
+                    <Check className="h-3.5 w-3.5 shrink-0" />
+                    <span>{selectedTaskIds.length} tasks selected to link to this target.</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ==========================================
+            Bottom Actions panel (Visuals matched exactly)
+            ========================================== */}
+        <div className="flex items-center justify-end px-6 py-4 border-t border-slate-100 bg-white gap-3 shrink-0">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            className="h-9 px-5 bg-white border-[#E2E8F0] hover:bg-slate-50 text-[12.5px] font-semibold text-slate-700 rounded-xl transition-all shadow-3xs"
+          >
+            Cancel
+          </Button>
+
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!isFormValid || isSubmitting}
+            className={`h-9 px-5 text-[12.5px] font-bold rounded-xl transition-all shadow-3xs flex items-center justify-center space-x-1.5 ${
+              isFormValid && !isSubmitting
+                ? "bg-[#0A172F] hover:bg-[#122342] text-white active:scale-98"
+                : "bg-slate-100 text-slate-400 border-0 cursor-not-allowed"
+            }`}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin mr-1 shrink-0" />
+                <span>Creating...</span>
+              </>
+            ) : (
+              <span>Create Target</span>
+            )}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }

@@ -20,7 +20,9 @@ import {
   Table,
   Clock,
   Sparkles,
+  UserPlus,
 } from "lucide-react";
+import { ProseMirrorEditor } from "@/components/proseMirror/ProseMirrorEditor";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -28,6 +30,9 @@ import { useGoalsStore } from "@/stores/goals-store";
 import { useWorkspaceStore } from "@/stores/workspace-store";
 import { useProfileStore } from "@/stores/profile-store";
 import { format } from "date-fns";
+import { CreateTargetModal } from "@/components/Goals/CreateTargetModal";
+import { TargetsSection } from "@/components/Goals/TargetsSection";
+import { EditTargetModal } from "@/components/Goals/EditTargetModal";
 
 // Define our stepper checklist items exactly as shown in the screenshot
 interface SetupStep {
@@ -43,9 +48,16 @@ export default function GoalDetailPage() {
   const goalId = params?.id as string;
 
   // Retrieve stores
-  const { currentGoal, getGoalById, updateGoal, toggleFavorite } = useGoalsStore();
+  const { currentGoal, getGoalById, updateGoal, toggleFavorite, isLoading } = useGoalsStore();
   const { currentWorkspace, workspaceMembers, fetchWorkspaceMembers } = useWorkspaceStore();
   const { user } = useProfileStore();
+
+  // Map workspace members to mentionable members structure
+  const mentionableMembers = workspaceMembers.map((m: any) => ({
+    id: m.userId || m.id || m._id || "",
+    name: m.name || "Unknown",
+    avatar: m.profilePicture || m.avatar || undefined,
+  }));
 
   // Dynamic States initialized to screenshot placeholders
   const [goalTitle, setGoalTitle] = useState("hjgfjhgfyhj");
@@ -53,6 +65,9 @@ export default function GoalDetailPage() {
   const [createdDateStr, setCreatedDateStr] = useState("MAY 29, 2026");
   const [endDateStr, setEndDateStr] = useState("NOT SET");
   const [isFavorited, setIsFavorited] = useState(false);
+  const [isCreateTargetOpen, setIsCreateTargetOpen] = useState(false);
+  const [isEditTargetOpen, setIsEditTargetOpen] = useState(false);
+  const [selectedTargetForEdit, setSelectedTargetForEdit] = useState<any>(null);
 
   // Stepper checklist items state
   const [checklist, setChecklist] = useState<SetupStep[]>([
@@ -420,114 +435,29 @@ export default function GoalDetailPage() {
 
               </div>
 
-              {/* Rich text editor box exactly matching style and shadow */}
-              <div className="border border-[#E2E8F0] rounded-2xl overflow-hidden flex flex-col bg-white">
-                {/* Toolbar matching exact screenshot elements */}
-                <div className="flex flex-wrap items-center justify-between px-3.5 py-2 border-b border-slate-100 bg-[#FAFAFA] min-h-[38px] select-none">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {/* Paragraph symbol */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-500 font-serif font-bold text-xs">
-                      ¶
-                    </button>
-                    {/* Bold */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-500 hover:text-slate-800">
-                      <Bold className="h-3.5 w-3.5" />
-                    </button>
-                    {/* Italic */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-500 hover:text-slate-800">
-                      <Italic className="h-3.5 w-3.5" />
-                    </button>
-                    {/* Underline */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-500 hover:text-slate-800">
-                      <Underline className="h-3.5 w-3.5" />
-                    </button>
-                    {/* Strikethrough */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-500 hover:text-slate-800">
-                      <Strikethrough className="h-3.5 w-3.5" />
-                    </button>
-                    {/* Highlighter/pen (dropper) */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-500 hover:text-slate-800 font-semibold text-[10px]">
-                      ✎
-                    </button>
-                    
-                    {/* AA 16 text size dropdown */}
-                    <button type="button" className="flex items-center space-x-1 px-1.5 py-0.5 rounded editor-btn text-[10.5px] font-bold text-slate-600">
-                      <span>AA 16</span>
-                      <ChevronRight className="h-3 w-3 rotate-90 text-slate-400" />
-                    </button>
-
-                    <span className="h-4 w-[1px] bg-slate-200 mx-0.5" />
-
-                    {/* Unordered list */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-500 hover:text-slate-800">
-                      <List className="h-3.5 w-3.5" />
-                    </button>
-                    {/* Ordered list */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-500 hover:text-slate-800">
-                      <ListOrdered className="h-3.5 w-3.5" />
-                    </button>
-                    {/* Grid/Table */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-500 hover:text-slate-800">
-                      <Table className="h-3.5 w-3.5" />
-                    </button>
-                    {/* Link */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-500 hover:text-slate-800">
-                      <LinkIcon className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {/* Left align */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-400 hover:text-slate-700">
-                      <AlignLeft className="h-3.5 w-3.5" />
-                    </button>
-                    {/* Center align */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-400 hover:text-slate-700">
-                      <AlignCenter className="h-3.5 w-3.5" />
-                    </button>
-                    {/* Right align */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-400 hover:text-slate-700">
-                      <AlignRight className="h-3.5 w-3.5" />
-                    </button>
-                    
-                    {/* Horizontal line divider */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-400 hover:text-slate-700 font-bold text-xs">
-                      —
-                    </button>
-
-                    <span className="h-4 w-[1px] bg-slate-200 mx-0.5" />
-                    
-                    {/* Clock */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-400 hover:text-slate-700">
-                      <Clock className="h-3.5 w-3.5" />
-                    </button>
-                    {/* Mention */}
-                    <button type="button" className="p-1 rounded editor-btn text-slate-400 hover:text-slate-700 font-bold text-xs">
-                      @
-                    </button>
-                  </div>
-                </div>
-
-                {/* Editor Text Area */}
-                <textarea
+              {/* Rich text editor box using ProseMirrorEditor */}
+              <div className="border border-[#E2E8F0] rounded-2xl overflow-hidden flex flex-col bg-white min-h-[160px]">
+                <ProseMirrorEditor
+                  initialContent={description || ""}
+                  mentionableMembers={mentionableMembers}
                   placeholder="Goal Description....."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  onBlur={async () => {
-                    if (goalId && description !== currentGoal?.description) {
+                  className="w-full h-full min-h-[110px]"
+                  editable={true}
+                  onBlur={async (newDescription: string) => {
+                    if (newDescription === description) return;
+                    setDescription(newDescription);
+                    if (goalId && newDescription !== currentGoal?.description) {
                       try {
-                        await updateGoal(goalId, { description: description });
+                        await updateGoal(goalId, { description: newDescription });
                         toast.success("Goal description updated!");
                         setChecklist((prev) =>
-                          prev.map((s) => s.id === "name-desc" ? { ...s, completed: !!(goalTitle.trim() && description.trim()) } : s)
+                          prev.map((s) => s.id === "name-desc" ? { ...s, completed: !!(goalTitle.trim() && newDescription.trim()) } : s)
                         );
                       } catch {
                         toast.error("Failed to update goal description.");
-                        setDescription(currentGoal?.description || "");
                       }
                     }
                   }}
-                  className="w-full p-4 text-[13px] text-slate-600 placeholder:text-slate-400 bg-transparent border-0 focus:ring-0 focus:outline-none resize-none min-h-[110px]"
                 />
               </div>
 
@@ -541,12 +471,12 @@ export default function GoalDetailPage() {
                       {ownerProfilePic ? (
                         <img src={ownerProfilePic} alt="Owner" className="w-full h-full object-cover" />
                       ) : (
-                        <span className="text-[10px] font-bold text-[#E25A2B]">{ownerInitials}</span>
+                        <span className="text-[10px] font-bold text-[#E25A2B]">{ownerInitials.slice(0, 1).toLowerCase()}</span>
                       )}
                     </div>
-                    {/* Overlapping Sparkle Avatar (Dark Blue) */}
+                    {/* Overlapping UserPlus Avatar (Dark Blue) */}
                     <div className="absolute left-4.5 w-7 h-7 rounded-full bg-[#0B1B3D] border-2 border-white flex items-center justify-center shadow-3xs select-none">
-                      <Sparkles className="h-3 w-3 text-white fill-white" />
+                      <UserPlus className="h-3 w-3 text-white" />
                     </div>
                   </div>
                 </div>
@@ -624,52 +554,34 @@ export default function GoalDetailPage() {
 
         </div>
 
-        {/* ── TARGET ILLUSTRATION SECTION & PRIMARY PILL BUTTON ── */}
-        <div className="flex flex-col items-center justify-center py-16 px-4">
-          
-          {/* Target illustration SVG with horizontal lines exactly matching screenshot */}
-          <div className="w-80 h-32 relative mb-8 flex items-center justify-center">
-            <svg 
-              className="w-full h-full" 
-              viewBox="0 0 200 80" 
-              fill="none" 
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              {/* Target Concentric Rings */}
-              <circle cx="150" cy="40" r="28" stroke="#D1DBE6" strokeWidth="2.5" />
-              <circle cx="150" cy="40" r="19" stroke="#BACCDD" strokeWidth="2.5" />
-              <circle cx="150" cy="40" r="10" stroke="#7E9EB8" strokeWidth="3" fill="#ECF4FA" />
-              <circle cx="150" cy="40" r="3.5" fill="#4C789E" />
-              
-              {/* Flying Arrow Connector lines */}
-              <line x1="10" y1="30" x2="110" y2="30" stroke="#D1DBE6" strokeWidth="1.5" />
-              <line x1="10" y1="50" x2="110" y2="50" stroke="#D1DBE6" strokeWidth="1.5" />
-              
-              <g className="transform translate-x-2">
-                {/* Arrow shaft */}
-                <line x1="55" y1="40" x2="142" y2="40" stroke="#4C789E" strokeWidth="2.5" strokeLinecap="round" />
-                {/* Arrow head */}
-                <path d="M136 36L144 40L136 44" stroke="#4C789E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                {/* Arrow fletching / lines */}
-                <line x1="62" y1="37" x2="68" y2="40" stroke="#7E9EB8" strokeWidth="2" />
-                <line x1="62" y1="43" x2="68" y2="40" stroke="#7E9EB8" strokeWidth="2" />
-                <line x1="57" y1="37" x2="63" y2="40" stroke="#7E9EB8" strokeWidth="2" />
-                <line x1="57" y1="43" x2="63" y2="40" stroke="#7E9EB8" strokeWidth="2" />
-              </g>
-            </svg>
-          </div>
+        {/* ── TARGETS SECTION ── */}
+        <TargetsSection
+          goalId={goalId}
+          targets={currentGoal?.targets || []}
+          onOpenCreateTarget={() => setIsCreateTargetOpen(true)}
+          onOpenEditTarget={(target) => {
+            setSelectedTargetForEdit(target);
+            setIsEditTargetOpen(true);
+          }}
+          isLoading={isLoading}
+        />
 
-          {/* Same-to-Same Dark Navy pill button */}
-          <Button
-            onClick={() => {
-              toast.info("Target Creation Started");
-            }}
-            className="bg-[#0A172F] hover:bg-[#122342] text-white text-[12.5px] font-bold px-7.5 py-5.5 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg active:scale-98 tracking-wide font-sans capitalize"
-          >
-            Create Target
-          </Button>
+        <CreateTargetModal
+          isOpen={isCreateTargetOpen}
+          onClose={() => setIsCreateTargetOpen(false)}
+          goalId={goalId}
+          goalTitle={goalTitle}
+        />
 
-        </div>
+        <EditTargetModal
+          isOpen={isEditTargetOpen}
+          onClose={() => {
+            setIsEditTargetOpen(false);
+            setSelectedTargetForEdit(null);
+          }}
+          target={selectedTargetForEdit}
+          goalId={goalId}
+        />
 
       </div>
     </div>

@@ -35,6 +35,9 @@ export interface GoalApiResponse {
   startDate?: number; // ✅ timestamp
     endDate?: number | null;
   __v?: number;
+  tenant?: string;
+  projects?: string[];
+  portfolios?: string[];
   assignedTeams?: string[];
   targets?: GoalTarget[];
   users?: any[];
@@ -62,6 +65,9 @@ export interface Goal {
   color?: string;
   icon?: string | null;
   assignedTeams?: string[];
+  tenant?: string;
+  projects?: string[];
+  portfolios?: string[];
   targets?: GoalTarget[];
   users?: any[];
   teams?: any[];
@@ -159,8 +165,8 @@ export interface GoalTarget {
   done?: boolean;
   assignedTo?: string | any;
   completed?: boolean;
-  startDate?: number; // ✅ timestamp
-    endDate?: number | null;
+  startDate?: string | number;
+  endDate?: string | number | null;
   unit?: string;
   localProgressPercent?: number;
   localNotes?: {
